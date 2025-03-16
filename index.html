@@ -341,10 +341,14 @@
       <div id="cars-container"></div>
     </div>
     <div id="button-container" style="margin-left: 20px; display: flex; flex-direction: column; gap: 10px;">
+      <div id="auth-form">
+        <input type="text" id="username-input" placeholder="Username" style="padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none;" />
+        <input type="password" id="password-input" placeholder="Passwort" style="padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none;" />
         <button id="loginButton" style="padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Anmelden</button>
         <button id="registerButton" style="padding: 10px; background-color: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Registrieren</button>
-        <button id="sendButton" style="padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Geld senden</button>
-        <button id="saveButton" style="padding: 10px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Spielstand speichern</button>
+      </div>
+      <button id="sendButton" style="padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Geld senden</button>
+      <button id="saveButton" style="padding: 10px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Spielstand speichern</button>
     </div>
 
     <div id="house-panel" class="panel">
@@ -572,8 +576,13 @@ function showNotification(message) {
 
 async function loginPlayer() {
   console.log('Login attempt started');
-  const username = prompt('Bitte gib deinen Username ein:');
-  const password = prompt('Bitte gib dein Passwort ein:');
+  const username = document.getElementById('username-input').value;
+  const password = document.getElementById('password-input').value;
+
+  if (!username || !password || username.trim() === "" || password.trim() === "") {
+    alert('Username und Passwort dürfen nicht leer sein!');
+    return;
+  }
 
   const response = await fetch(WEB_APP_URL, {
     method: 'POST',
@@ -596,6 +605,9 @@ async function loginPlayer() {
     updateHeader();
     renderMemecoinSections();
     showNotification(`Willkommen, ${username}!`);
+    // Optional: Leere die Eingabefelder nach erfolgreichem Login
+    document.getElementById('username-input').value = '';
+    document.getElementById('password-input').value = '';
   } else {
     alert(result.error);
   }
@@ -603,10 +615,10 @@ async function loginPlayer() {
 
 async function registerPlayer() {
   console.log('Registration attempt started');
-  const username = prompt('Bitte wähle einen Username:');
-  const password = prompt('Bitte wähle ein Passwort:');
+  const username = document.getElementById('username-input').value;
+  const password = document.getElementById('password-input').value;
 
-  if (!username || !password) {
+  if (!username || !password || username.trim() === "" || password.trim() === "") {
     alert('Username und Passwort dürfen nicht leer sein!');
     return;
   }
@@ -626,6 +638,9 @@ async function registerPlayer() {
 
   if (result.success) {
     showNotification(`Registrierung erfolgreich! Du kannst dich jetzt als ${username} anmelden.`);
+    // Optional: Leere die Eingabefelder nach erfolgreicher Registrierung
+    document.getElementById('username-input').value = '';
+    document.getElementById('password-input').value = '';
   } else {
     alert(result.error);
   }
@@ -697,7 +712,7 @@ async function saveGameStateToServer() {
 
 const fetchGlobalValues = async () => {
   try {
-    const response = await fetch('https://script.google.com/macros/s/AKfycbw6kncnPNIAogY9GDIf5VVZOlrliFJXkZTqDp6E2hzRP3mAZejFkn3SBtWAwfsn5jf1Xg/exec'); // Ersetze dies mit deiner Web-App-URL
+    const response = await fetch('https://script.google.com/macros/s/AKfycbw6kncnPNIAogY9GDIf5VVZOlrliFJXkZTqDp6E2hzRP3mAZejFkn3SBtWAwfsn5jf1Xg/exec');
     if (!response.ok) throw new Error('Failed to fetch global values');
     const data = await response.json();
     globalMemecoins = data.memecoins || [];
@@ -705,12 +720,12 @@ const fetchGlobalValues = async () => {
     globalStocks = data.stocks || [];
     globalCars = data.cars || [];
 
-    // Aktualisiere die Preise im Spiel
     updateGamePrices();
     updateMemecoinKurse();
     renderCarList();
   } catch (error) {
     console.error('Error fetching global values:', error);
+    showNotification('Fehler beim Abrufen der globalen Werte. Bitte versuche es später erneut.');
   }
 };
 
@@ -721,9 +736,9 @@ document.getElementById('sendButton').addEventListener('click', sendMoney);
 document.getElementById('saveButton').addEventListener('click', saveGameStateToServer);
 // Entferne den zweiten saveButton-Listener (siehe Punkt 2)
 
-// Initialer Aufruf und dann alle 10 Sekunden aktualisieren
-fetchGlobalValues();
-setInterval(fetchGlobalValues, 10000);
+// Initialer Aufruf und dann alle 10 Sekunden aktualisieren (vorübergehend deaktiviert)
+// fetchGlobalValues();
+// setInterval(fetchGlobalValues, 10000);
 
 function updateGamePrices() {
   // Aktualisiere Memecoins
@@ -1071,12 +1086,18 @@ document.getElementById('play-slots').addEventListener('click', () => {
 
       document.getElementById('deposit-btn').addEventListener('click', () => {
         let deposit = parseFloat(document.getElementById('bank-deposit').value);
-        if(deposit > 0 && deposit <= balance) {
-          balance -= deposit;
-          bankBalance += deposit;
-          updateHeader();
-          document.getElementById('bank-deposit').value = 0;
+        if (isNaN(deposit) || deposit <= 0) {
+          alert('Bitte gib einen gültigen Betrag ein!');
+          return;
         }
+        if (deposit > balance) {
+          alert('Nicht genug Guthaben!');
+          return;
+        }
+        balance -= deposit;
+        bankBalance += deposit;
+        updateHeader();
+        document.getElementById('bank-deposit').value = 0;
       });
       document.getElementById('withdraw-btn').addEventListener('click', () => {
         let withdraw = parseFloat(document.getElementById('bank-withdraw').value);

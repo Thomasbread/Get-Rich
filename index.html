@@ -693,13 +693,6 @@ async function saveGameStateToServer() {
     return;
   }
 
-  // Validierung der Daten vor dem Senden
-  if (!currentPlayer.username) {
-    console.error('Username is missing.');
-    showNotification('Fehler: Benutzername fehlt.');
-    return;
-  }
-
   const password = prompt('Bestätige dein Passwort, um zu speichern:');
   if (!password || password.trim() === "") {
     console.error('Password is empty or invalid.');
@@ -707,9 +700,8 @@ async function saveGameStateToServer() {
     return;
   }
 
-  // Stelle sicher, dass alle Daten definiert sind
   const gameState = {
-    action: 'updatePlayerData',
+    action: 'saveGameState', // Ändere dies basierend auf Schritt 1 oder Testen
     username: currentPlayer.username,
     password: password,
     balance: balance || 0,
@@ -726,7 +718,6 @@ async function saveGameStateToServer() {
   };
 
   try {
-    // Sende die Anfrage an die API
     const response = await fetch(WEB_APP_URL, {
       method: 'POST',
       headers: {
@@ -735,13 +726,11 @@ async function saveGameStateToServer() {
       body: JSON.stringify(gameState)
     });
 
-    // Prüfe, ob die Antwort erfolgreich war
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
     }
 
-    // Parsen der Antwort
     const result = await response.json();
 
     if (result.success) {

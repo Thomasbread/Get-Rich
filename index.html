@@ -687,26 +687,73 @@ async function sendMoney() {
 
 // Funktion zum Speichern des Spielstands auf dem Server
 async function saveGameStateToServer() {
-  if (!currentPlayer) return;
+  if (!currentPlayer) {
+    console.error('No player logged in. Cannot save game state.');
+    showNotification('Bitte melde dich zuerst an, um den Spielstand zu speichern!');
+    return;
+  }
 
-  const response = await fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'updatePlayerData',
-      username: currentPlayer.username,
-      password: prompt('Bestätige dein Passwort, um zu speichern:'),
-      balance: balance,
-      bankBalance: bankBalance,
-      memecoins: memecoins
-    })
-  });
-  const result = await response.json();
+  // Validierung der Daten vor dem Senden
+  if (!currentPlayer.username) {
+    console.error('Username is missing.');
+    showNotification('Fehler: Benutzername fehlt.');
+    return;
+  }
 
-  if (result.success) {
-    showNotification('Spielstand gespeichert!');
-  } else {
-    alert(result.error);
+  const password = prompt('Bestätige dein Passwort, um zu speichern:');
+  if (!password || password.trim() === "") {
+    console.error('Password is empty or invalid.');
+    showNotification('Fehler: Passwort darf nicht leer sein.');
+    return;
+  }
+
+  // Stelle sicher, dass alle Daten definiert sind
+  const gameState = {
+    action: 'updatePlayerData',
+    username: currentPlayer.username,
+    password: password,
+    balance: balance || 0,
+    bankBalance: bankBalance || 0,
+    memecoins: memecoins || {},
+    hasHouse: hasHouse || false,
+    credits: credits || [],
+    invoices: invoices || [],
+    cars: cars || [],
+    investmentValue: investmentValue || 0,
+    stocksValue: stocksValue || 0,
+    lastWorkTime: lastWorkTime || 0,
+    countdownTime: countdownTime || 60
+  };
+
+  try {
+    // Sende die Anfrage an die API
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(gameState)
+    });
+
+    // Prüfe, ob die Antwort erfolgreich war
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+    }
+
+    // Parsen der Antwort
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('Game state saved successfully:', result);
+      showNotification('Spielstand erfolgreich gespeichert!');
+    } else {
+      console.error('Failed to save game state:', result.error);
+      showNotification(`Fehler beim Speichern: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Error saving game state:', error.message);
+    showNotification(`Fehler beim Speichern des Spielstands: ${error.message}`);
   }
 }
 

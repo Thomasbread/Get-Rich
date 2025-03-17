@@ -43,37 +43,49 @@ exports.handler = async function(event, context) {
   // Handle the action
   switch (normalizedAction) {
     case "registerplayer":
-      console.log("Handling registerPlayer for:", username);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ success: true })
-      };
+        console.log("Handling registerPlayer for:", username);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ success: true })
+        };
 
     case "getplayerdata":
-      console.log("Handling getPlayerData for:", username);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          data: {
-            username: username,
-            balance: 100.00,
-            bankBalance: 0.00,
-            memecoins: {
-              PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-              PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-              GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-              GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
-            }
-          }
-        })
-      };
+        console.log("Handling getPlayerData for:", username);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                success: true,
+                data: {
+                    username: username,
+                    balance: 100.00,
+                    bankBalance: 0.00,
+                    memecoins: {
+                        PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                        PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                        GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                        GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+                    }
+                }
+            })
+        };
+
+    case "updateplayer": // Neue Aktion zum Speichern des Spielstands
+        console.log("Handling updatePlayer for:", username);
+        // Hier würdest du normalerweise die Daten in einer Datenbank speichern
+        // Für dieses Beispiel geben wir einfach eine Erfolgsmeldung zurück
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                success: true,
+                message: `Spielstand für ${username} erfolgreich aktualisiert`
+            })
+        };
 
     default:
-      console.log("Unbekannte Aktion nach Normalisierung:", normalizedAction);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ success: false, error: "Unbekannte Aktion" })
-      };
-  }
+        console.log("Unbekannte Aktion nach Normalisierung:", normalizedAction);
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ success: false, error: "Unbekannte Aktion" })
+        };
+}
 };

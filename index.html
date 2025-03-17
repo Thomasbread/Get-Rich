@@ -753,7 +753,12 @@ async function saveGameStateToServer() {
 document.getElementById('loginButton').addEventListener('click', loginPlayer);
 document.getElementById('registerButton').addEventListener('click', registerPlayer); // Neue Zeile hier einfügen
 document.getElementById('sendButton').addEventListener('click', sendMoney);
-document.getElementById('saveButton').addEventListener('click', saveGameStateToServer);
+document.getElementById('logoutButton').addEventListener('click', () => {
+    localStorage.removeItem('currentPlayer');
+    currentPlayer = null;
+    showNotification('Erfolgreich abgemeldet!');
+    location.reload(); // Seite neu laden, um den Zustand zurückzusetzen
+});
 // Entferne den zweiten saveButton-Listener (siehe Punkt 2)
 
     setInterval(() => {
@@ -1010,7 +1015,6 @@ async function fetchPlayerData(username, password) {
             hasHouse = result.data.hasHouse || false;
             credits = result.data.credits || [];
             invoices = result.data.invoices || [];
- = result.data.invoices || [];
             cars = result.data.cars || [
                 { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
                 { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },

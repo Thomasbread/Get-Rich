@@ -575,8 +575,8 @@ function showNotification(message) {
 }
 
 async function loginPlayer() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+    const username = document.getElementById('username-input').value;
+    const password = document.getElementById('password-input').value;
     if (!username || !password) {
         showNotification('Bitte Benutzername und Passwort eingeben!');
         return;
@@ -595,18 +595,27 @@ async function loginPlayer() {
 
         if (result.success && result.data) {
             currentPlayer = { username: username };
-            balance = result.data.balance;
-            bankBalance = result.data.bankBalance;
-            memecoins = result.data.memecoins;
-            hasHouse = result.data.hasHouse;
-            credits = result.data.credits;
-            invoices = result.data.invoices;
-            cars = result.data.cars;
-            investmentValue = result.data.investmentValue;
-            stocksValue = result.data.stocksValue;
-            lastWorkTime = result.data.lastWorkTime;
-            countdownTime = result.data.countdownTime;
-            updateUI();
+            balance = result.data.balance || 0;
+            bankBalance = result.data.bankBalance || 0;
+            memecoins = result.data.memecoins || {
+                PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+            };
+            hasHouse = result.data.hasHouse || false;
+            credits = result.data.credits || [];
+            invoices = result.data.invoices || [];
+            cars = result.data.cars || [
+                { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
+                { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
+                { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
+            ];
+            investmentValue = result.data.investmentValue || 0;
+            stocksValue = result.data.stocksValue || 0;
+            lastWorkTime = result.data.lastWorkTime || 0;
+            countdownTime = result.data.countdownTime || 60;
+            updateHeader(); // UI aktualisieren
             showNotification('Erfolgreich angemeldet!');
         } else {
             showNotification(result.error || 'Anmeldung fehlgeschlagen!');
@@ -705,7 +714,7 @@ async function saveGameStateToServer() {
   }
 
   const gameState = {
-    action: 'updatePlayer', // Ändere dies basierend auf Schritt 1 oder Testen
+    action: 'updatePlayerData', // Ändere dies basierend auf Schritt 1 oder Testen
     username: currentPlayer.username,
     password: password,
     balance: balance || 0,

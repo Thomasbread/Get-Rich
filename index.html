@@ -59,6 +59,18 @@
       cursor: pointer;
       transition: background 0.3s;
     }
+    .logout-button {
+      margin: 10px;
+      padding: 10px 20px;
+      background: #007acc;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .logout-button:hover {
+      background: #005f99;
+    }
     .back-button:hover, .shop-button:hover, .bank-button:hover, .credit-button:hover, .invoice-button:hover, .house-button:hover {
       background: #005f99;
     }
@@ -346,6 +358,7 @@
         <input type="password" id="password-input" placeholder="Passwort" style="padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none;" />
         <button id="loginButton" style="padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Anmelden</button>
         <button id="registerButton" style="padding: 10px; background-color: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Registrieren</button>
+        <button id="logout-button">Logout</button>
       </div>
       <button id="sendButton" style="padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 150px;">Geld senden</button>
     </div>
@@ -904,6 +917,13 @@
                 reel.textContent = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
             });
         }, 100);
+
+        document.querySelector('.logout-button').addEventListener('click', function() {
+            // Clear any stored user data or session information
+            localStorage.clear();
+            // Redirect to the login page or home page
+            window.location.href = 'login.html'; // Change this to your actual login page URL
+        });
 
         setTimeout(() => {
             clearInterval(spinInterval);

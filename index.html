@@ -521,527 +521,488 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
-      let balance = 100.00;
-      let bankBalance = 0.00;
-      let investmentValue = 0.00;
-      let stocksValue = 0.00;
-      let memecoins = {
+    let balance = 100.00;
+    let bankBalance = 0.00;
+    let investmentValue = 0.00;
+    let stocksValue = 0.00;
+    let memecoins = {
         "PEPE": { unlocked: false, value: 0, price: 0.5 + Math.random()*0.5, leverage: 1, prevPrice: 0 },
         "PEIPEI": { unlocked: false, value: 0, price: 0.5 + Math.random()*0.5, leverage: 1, prevPrice: 0 },
         "GIGACHAD": { unlocked: false, value: 0, price: 0.5 + Math.random()*0.5, leverage: 1, prevPrice: 0 },
         "GAMESTOP": { unlocked: false, value: 0, price: 0.5 + Math.random()*0.5, leverage: 1, prevPrice: 0 }
-      };
-      let hasHouse = true;
-      let credits = [];
-      let invoices = [];
-      let lastWorkTime = 0;
-      let countdownTime = 60;
-      let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
-      let currentMinesBet = 0;
+    };
+    let hasHouse = true;
+    let credits = [];
+    let invoices = [];
+    let lastWorkTime = 0;
+    let countdownTime = 60;
+    let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
+    let currentMinesBet = 0;
 
-      let cars = [
+    let cars = [
         { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
         { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
         { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
-      ];
+    ];
 
-      // Globale Variablen für die Daten aus der Spreadsheet
-let globalMemecoins = [];
-let globalStocksFunds = [];
-let globalStocks = [];
-let globalCars = [];
+    // Globale Variablen für die Daten aus der Spreadsheet
+    let globalMemecoins = [];
+    let globalStocksFunds = [];
+    let globalStocks = [];
+    let globalCars = [];
 
-// Globale Variablen für Spieler
-let currentPlayer = null;
-const WEB_APP_URL = '/.netlify/functions/api'; // Ersetze dies mit deiner Web-App-URL
+    // Globale Variablen für Spieler
+    let currentPlayer = null;
+    const WEB_APP_URL = '/.netlify/functions/api'; // Ersetze dies mit deiner Web-App-URL
 
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.style.position = 'fixed';
-  notification.style.top = '20px';
-  notification.style.right = '20px';
-  notification.style.padding = '10px 20px';
-  notification.style.background = '#4CAF50';
-  notification.style.color = 'white';
-  notification.style.borderRadius = '5px';
-  notification.style.zIndex = '1000';
-  notification.textContent = message;
-  document.body.appendChild(notification);
+    // Elementreferenzen
+    const balanceElem = document.getElementById('balance-display');
+    const bankDisplayElem = document.getElementById('bank-display');
+    const stocksDisplayElem = document.getElementById('stocks-display');
+    const investmentDisplayElem = document.getElementById('investment-display');
+    const memecoinDisplayElem = document.getElementById('memecoin-display');
+    const gameBoardElem = document.getElementById('game-board');
+    const multiplierElem = document.getElementById('multiplier');
+    const gameMessageElem = document.getElementById('game-message');
+    const startGameBtn = document.getElementById('start-game');
+    const takeProfitBtn = document.getElementById('take-profit');
+    const workButton = document.getElementById('work-button');
+    const countdownElem = document.getElementById('countdown');
 
-  setTimeout(() => {
-    notification.remove();
-  }, 3000); // Entfernt die Benachrichtigung nach 3 Sekunden
-}
+    // Slot-Automat Definitionen
+    const slotSymbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎'];
+    const slotProbabilities = [30, 25, 20, 15, 7, 3]; // Anzahl der "Stops" pro Symbol (insgesamt 100)
+    const slotPayouts = {
+        '🍒': 12,  // 12x Einsatz für drei Kirschen
+        '🍋': 18,  // 18x Einsatz für drei Zitronen
+        '🍊': 25,  // 25x Einsatz für drei Orangen
+        '🍇': 40,  // 40x Einsatz für drei Trauben
+        '🔔': 80,  // 80x Einsatz für drei Glocken
+        '💎': 150  // 150x Einsatz für drei Diamanten
+    };
 
-async function loginPlayer() {
-    const username = document.getElementById('username-input').value;
-    const password = document.getElementById('password-input').value;
-    if (!username || !password) {
-        showNotification('Bitte Benutzername und Passwort eingeben!');
-        return;
+    // Erzeuge ein Array mit 100 "Stops" basierend auf den Wahrscheinlichkeiten
+    const reelStops = [];
+    slotSymbols.forEach((symbol, index) => {
+        for(let i = 0; i < slotProbabilities[index]; i++) {
+            reelStops.push(symbol);
+        }
+    });
+
+    // Funktionen
+    function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.padding = '10px 20px';
+        notification.style.background = '#4CAF50';
+        notification.style.color = 'white';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '1000';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 
-    console.log('Login attempt started');
-    try {
+    async function loginPlayer() {
+        const username = document.getElementById('username-input').value;
+        const password = document.getElementById('password-input').value;
+        if (!username || !password) {
+            showNotification('Bitte Benutzername und Passwort eingeben!');
+            return;
+        }
+
+        console.log('Login attempt started');
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
+            });
+            console.log('Response received:', response.status, response.statusText);
+            const result = await response.json();
+            console.log('Result:', result);
+
+            if (result.success && result.data) {
+                currentPlayer = { username: username, password: password };
+                localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
+                console.log('currentPlayer set:', currentPlayer);
+                balance = result.data.balance || 0;
+                bankBalance = result.data.bankBalance || 0;
+                memecoins = result.data.memecoins || {
+                    PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+                };
+                hasHouse = result.data.hasHouse || false;
+                credits = result.data.credits || [];
+                invoices = result.data.invoices || [];
+                cars = result.data.cars || [
+                    { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
+                    { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
+                    { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
+                ];
+                investmentValue = result.data.investmentValue || 0;
+                stocksValue = result.data.stocksValue || 0;
+                lastWorkTime = result.data.lastWorkTime || 0;
+                countdownTime = result.data.countdownTime || 60;
+                updateHeader();
+                showNotification('Erfolgreich angemeldet!');
+            } else {
+                showNotification(result.error || 'Anmeldung fehlgeschlagen!');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showNotification('Fehler bei der Anmeldung: ' + error.message);
+        }
+    }
+
+    async function registerPlayer() {
+        console.log('Registration attempt started');
+        const username = document.getElementById('username-input').value;
+        const password = document.getElementById('password-input').value;
+
+        if (!username || !password || username.trim() === "" || password.trim() === "") {
+            alert('Username und Passwort dürfen nicht leer sein!');
+            return;
+        }
+
         const response = await fetch(WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
+            body: JSON.stringify({
+                action: 'registerPlayer',
+                username: username,
+                password: password
+            })
         });
-        console.log('Response received:', response.status, response.statusText);
+        console.log('Response received:', response);
         const result = await response.json();
         console.log('Result:', result);
 
-        if (result.success && result.data) {
-            currentPlayer = { username: username, password: password }; // Passwort in currentPlayer speichern
-            localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer)); // In localStorage speichern
-            console.log('currentPlayer set:', currentPlayer);
-            balance = result.data.balance || 0;
-            bankBalance = result.data.bankBalance || 0;
-            memecoins = result.data.memecoins || {
-                PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
-            };
-            hasHouse = result.data.hasHouse || false;
-            credits = result.data.credits || [];
-            invoices = result.data.invoices || [];
-            cars = result.data.cars || [
-                { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
-                { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
-                { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
-            ];
-            investmentValue = result.data.investmentValue || 0;
-            stocksValue = result.data.stocksValue || 0;
-            lastWorkTime = result.data.lastWorkTime || 0;
-            countdownTime = result.data.countdownTime || 60;
-            updateHeader();
-            showNotification('Erfolgreich angemeldet!');
+        if (result.success) {
+            showNotification(`Registrierung erfolgreich! Du kannst dich jetzt als ${username} anmelden.`);
+            document.getElementById('username-input').value = '';
+            document.getElementById('password-input').value = '';
         } else {
-            showNotification(result.error || 'Anmeldung fehlgeschlagen!');
+            alert(result.error);
         }
-    } catch (error) {
-        console.error('Login error:', error);
-        showNotification('Fehler bei der Anmeldung: ' + error.message);
-    }
-}
-
-async function registerPlayer() {
-  console.log('Registration attempt started');
-  const username = document.getElementById('username-input').value;
-  const password = document.getElementById('password-input').value;
-
-  if (!username || !password || username.trim() === "" || password.trim() === "") {
-    alert('Username und Passwort dürfen nicht leer sein!');
-    return;
-  }
-
-  const response = await fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'registerPlayer',
-      username: username,
-      password: password
-    })
-  });
-  console.log('Response received:', response);
-  const result = await response.json();
-  console.log('Result:', result);
-
-  if (result.success) {
-    showNotification(`Registrierung erfolgreich! Du kannst dich jetzt als ${username} anmelden.`);
-    // Optional: Leere die Eingabefelder nach erfolgreicher Registrierung
-    document.getElementById('username-input').value = '';
-    document.getElementById('password-input').value = '';
-  } else {
-    alert(result.error);
-  }
-}
-
-// Funktion zum Senden von Geld
-async function sendMoney() {
-    if (!currentPlayer) {
-        alert('Bitte melde dich zuerst an!');
-        return;
     }
 
-    const toUsername = prompt('An wen möchtest du Geld senden? (Username):');
-    const amount = parseFloat(prompt('Wie viel möchtest du senden?:'));
+    async function sendMoney() {
+        if (!currentPlayer) {
+            alert('Bitte melde dich zuerst an!');
+            return;
+        }
 
-    if (!toUsername || isNaN(amount) || amount <= 0) {
-        alert('Ungültige Eingabe!');
-        return;
-    }
+        const toUsername = prompt('An wen möchtest du Geld senden? (Username):');
+        const amount = parseFloat(prompt('Wie viel möchtest du senden?:'));
 
-    const response = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            action: 'sendMoney',
-            fromUsername: currentPlayer.username,
-            toUsername: toUsername,
-            amount: amount,
-            password: currentPlayer.password // Verwende das gespeicherte Passwort
-        })
-    });
-    const result = await response.json();
+        if (!toUsername || isNaN(amount) || amount <= 0) {
+            alert('Ungültige Eingabe!');
+            return;
+        }
 
-    if (result.success) {
-        balance -= amount;
-        updateHeader();
-        showNotification(result.message);
-    } else {
-        alert(result.error);
-    }
-}
-
-// Funktion zum Speichern des Spielstands auf dem Server
-async function saveGameStateToServer() {
-    if (!currentPlayer) {
-        console.error('No player logged in. Cannot save game state.');
-        showNotification('Bitte melde dich zuerst an, um den Spielstand zu speichern!');
-        return;
-    }
-
-    const gameState = {
-        action: 'updatePlayerData',
-        username: currentPlayer.username,
-        password: currentPlayer.password, // Verwende das gespeicherte Passwort
-        balance: balance || 0,
-        bankBalance: bankBalance || 0,
-        memecoins: memecoins || {},
-        hasHouse: hasHouse || false,
-        credits: credits || [],
-        invoices: invoices || [],
-        cars: cars || [],
-        investmentValue: investmentValue || 0,
-        stocksValue: stocksValue || 0,
-        lastWorkTime: lastWorkTime || 0,
-        countdownTime: countdownTime || 60
-    };
-
-    try {
         const response = await fetch(WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gameState)
+            body: JSON.stringify({
+                action: 'sendMoney',
+                fromUsername: currentPlayer.username,
+                toUsername: toUsername,
+                amount: amount,
+                password: currentPlayer.password
+            })
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
-        }
-
         const result = await response.json();
 
         if (result.success) {
-            console.log('Game state saved successfully:', result);
-            showNotification('Spielstand erfolgreich gespeichert!');
+            balance -= amount;
+            updateHeader();
+            showNotification(result.message);
         } else {
-            console.error('Failed to save game state:', result.error);
-            showNotification(`Fehler beim Speichern: ${result.error}`);
+            alert(result.error);
         }
-    } catch (error) {
-        console.error('Error saving game state:', error.message);
-        showNotification(`Fehler beim Speichern des Spielstands: ${error.message}`);
     }
-}
 
-// Event-Listener für die Buttons hinzufügen
-document.getElementById('loginButton').addEventListener('click', loginPlayer);
-document.getElementById('registerButton').addEventListener('click', registerPlayer); // Neue Zeile hier einfügen
-document.getElementById('sendButton').addEventListener('click', sendMoney);
-document.getElementById('logoutButton').addEventListener('click', () => {
-    localStorage.removeItem('currentPlayer');
-    currentPlayer = null;
-    showNotification('Erfolgreich abgemeldet!');
-    location.reload(); // Seite neu laden, um den Zustand zurückzusetzen
-});
-// Entferne den zweiten saveButton-Listener (siehe Punkt 2)
-
-    setInterval(() => {
-        if (currentPlayer) {
-            saveGameStateToServer();
+    async function saveGameStateToServer() {
+        if (!currentPlayer) {
+            console.error('No player logged in. Cannot save game state.');
+            showNotification('Bitte melde dich zuerst an, um den Spielstand zu speichern!');
+            return;
         }
-    }, 60000); // 60 Sekunden
 
-});    
+        const gameState = {
+            action: 'updatePlayerData',
+            username: currentPlayer.username,
+            password: currentPlayer.password,
+            balance: balance || 0,
+            bankBalance: bankBalance || 0,
+            memecoins: memecoins || {},
+            hasHouse: hasHouse || false,
+            credits: credits || [],
+            invoices: invoices || [],
+            cars: cars || [],
+            investmentValue: investmentValue || 0,
+            stocksValue: stocksValue || 0,
+            lastWorkTime: lastWorkTime || 0,
+            countdownTime: countdownTime || 60
+        };
 
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gameState)
+            });
 
-// Initialer Aufruf und dann alle 10 Sekunden aktualisieren (vorübergehend deaktiviert)
-// fetchGlobalValues();
-// setInterval(fetchGlobalValues, 10000);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+            }
 
-function updateGamePrices() {
-  // Aktualisiere Memecoins
-  globalMemecoins.forEach(globalCoin => {
-    const coinName = globalCoin.name;
-    if (memecoins[coinName]) {
-      memecoins[coinName].price = globalCoin.currentPrice;
-      memecoins[coinName].prevPrice = globalCoin.prevPrice || globalCoin.currentPrice;
-      if (memecoins[coinName].unlocked) {
-        const priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100 || 0;
-        const leverage = memecoins[coinName].leverage || 1;
-        memecoins[coinName].value *= (1 + (priceChangePercent * leverage) / 100);
-        if (memecoins[coinName].value < 0) {
-          alert(`${coinName} ist im Minus (${priceChangePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
-          bankBalance += memecoins[coinName].value;
-          memecoins[coinName].value = 0;
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('Game state saved successfully:', result);
+                showNotification('Spielstand erfolgreich gespeichert!');
+            } else {
+                console.error('Failed to save game state:', result.error);
+                showNotification(`Fehler beim Speichern: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error saving game state:', error.message);
+            showNotification(`Fehler beim Speichern des Spielstands: ${error.message}`);
         }
-      }
     }
-  });
 
-  // Aktualisiere Investmentfond
-  if (globalStocksFunds.length > 0) {
-    const globalFund = globalStocksFunds[0];
-    // Sicherstellen, dass prevPrice und currentPrice gültige Werte haben
-    const prevPrice = isNaN(globalFund.prevPrice) || globalFund.prevPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.prevPrice;
-    const currentPrice = isNaN(globalFund.currentPrice) || globalFund.currentPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.currentPrice;
+    function updateGamePrices() {
+        globalMemecoins.forEach(globalCoin => {
+            const coinName = globalCoin.name;
+            if (memecoins[coinName]) {
+                memecoins[coinName].price = globalCoin.currentPrice;
+                memecoins[coinName].prevPrice = globalCoin.prevPrice || globalCoin.currentPrice;
+                if (memecoins[coinName].unlocked) {
+                    const priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100 || 0;
+                    const leverage = memecoins[coinName].leverage || 1;
+                    memecoins[coinName].value *= (1 + (priceChangePercent * leverage) / 100);
+                    if (memecoins[coinName].value < 0) {
+                        alert(`${coinName} ist im Minus (${priceChangePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
+                        bankBalance += memecoins[coinName].value;
+                        memecoins[coinName].value = 0;
+                    }
+                }
+            }
+        });
 
-    if (investmentValue > 0) {
-      const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
-      const maxChangePercent = 100; // Begrenze Änderungen auf ±100%
-      const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
-      investmentValue *= (1 + (limitedPriceChangePercent / 100));
-      // Verhindere Infinity oder NaN
-      if (!isFinite(investmentValue) || isNaN(investmentValue)) {
-        investmentValue = 0;
-      }
+        if (globalStocksFunds.length > 0) {
+            const globalFund = globalStocksFunds[0];
+            const prevPrice = isNaN(globalFund.prevPrice) || globalFund.prevPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.prevPrice;
+            const currentPrice = isNaN(globalFund.currentPrice) || globalFund.currentPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.currentPrice;
+
+            if (investmentValue > 0) {
+                const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
+                const maxChangePercent = 100;
+                const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
+                investmentValue *= (1 + (limitedPriceChangePercent / 100));
+                if (!isFinite(investmentValue) || isNaN(investmentValue)) {
+                    investmentValue = 0;
+                }
+            }
+        }
+
+        if (globalStocks.length > 0) {
+            const globalStock = globalStocks[0];
+            const prevPrice = isNaN(globalStock.prevPrice) || globalStock.prevPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.prevPrice;
+            const currentPrice = isNaN(globalStock.currentPrice) || globalStock.currentPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.currentPrice;
+
+            if (stocksValue > 0) {
+                const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
+                const maxChangePercent = 100;
+                const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
+                stocksValue *= (1 + (limitedPriceChangePercent / 100));
+                if (!isFinite(stocksValue) || isNaN(stocksValue)) {
+                    stocksValue = 0;
+                }
+            }
+        }
+
+        globalCars.forEach((globalCar, index) => {
+            if (cars[index]) {
+                cars[index].currentPrice = globalCar.currentPrice;
+            }
+        });
+
+        updateHeader();
+        renderMemecoinSections();
     }
-  }
 
-  // Aktualisiere Aktien
-  if (globalStocks.length > 0) {
-    const globalStock = globalStocks[0];
-    // Sicherstellen, dass prevPrice und currentPrice gültige Werte haben
-    const prevPrice = isNaN(globalStock.prevPrice) || globalStock.prevPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.prevPrice;
-    const currentPrice = isNaN(globalStock.currentPrice) || globalStock.currentPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.currentPrice;
-
-    if (stocksValue > 0) {
-      const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
-      const maxChangePercent = 100; // Begrenze Änderungen auf ±100%
-      const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
-      stocksValue *= (1 + (limitedPriceChangePercent / 100));
-      // Verhindere Infinity oder NaN
-      if (!isFinite(stocksValue) || isNaN(stocksValue)) {
-        stocksValue = 0;
-      }
+    function renderCarList() {
+        const carList = document.getElementById('car-list');
+        carList.innerHTML = '';
+        if (!Array.isArray(cars) || cars.length === 0) {
+            carList.innerHTML = '<p>Keine Autos verfügbar.</p>';
+            return;
+        }
+        cars.forEach((car, index) => {
+            const carDiv = document.createElement('div');
+            carDiv.innerHTML = `
+                <p>${car.emoji} - Preis: €${car.currentPrice.toFixed(2)} - Besitz: ${car.owned}</p>
+                <button class="shop-button" onclick="buyCar(${index})">Kaufen</button>
+                <button class="shop-button" onclick="sellCar(${index})" ${car.owned === 0 ? 'disabled' : ''}>Verkaufen</button>
+            `;
+            carList.appendChild(carDiv);
+        });
     }
-  }
 
-  // Aktualisiere Autos
-  globalCars.forEach((globalCar, index) => {
-    if (cars[index]) {
-      cars[index].currentPrice = globalCar.currentPrice;
-    }
-  });
+    window.buyCar = (index) => {
+        const car = cars[index];
+        if (balance >= car.currentPrice) {
+            balance -= car.currentPrice;
+            car.owned += 1;
+            updateHeader();
+            renderCarList();
+        } else {
+            alert("Nicht genug Guthaben!");
+        }
+    };
 
-  updateHeader();
-  renderMemecoinSections();
-}
+    window.sellCar = (index) => {
+        const car = cars[index];
+        if (car.owned > 0) {
+            balance += car.currentPrice;
+            car.owned -= 1;
+            updateHeader();
+            renderCarList();
+        } else {
+            alert("Du besitzt kein Auto dieser Art!");
+        }
+    };
 
-      const balanceElem = document.getElementById('balance-display');
-      const bankDisplayElem = document.getElementById('bank-display');
-      const stocksDisplayElem = document.getElementById('stocks-display');
-      const investmentDisplayElem = document.getElementById('investment-display');
-      const memecoinDisplayElem = document.getElementById('memecoin-display');
-      const gameBoardElem = document.getElementById('game-board');
-      const multiplierElem = document.getElementById('multiplier');
-      const gameMessageElem = document.getElementById('game-message');
-      const startGameBtn = document.getElementById('start-game');
-      const takeProfitBtn = document.getElementById('take-profit');
-      const workButton = document.getElementById('work-button');
-      const countdownElem = document.getElementById('countdown');
-      // Slot-Automat Definitionen
-const slotSymbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎'];
-const slotProbabilities = [30, 25, 20, 15, 7, 3]; // Anzahl der "Stops" pro Symbol (insgesamt 100)
-const slotPayouts = {
-  '🍒': 12,  // 12x Einsatz für drei Kirschen
-  '🍋': 18,  // 18x Einsatz für drei Zitronen
-  '🍊': 25,  // 25x Einsatz für drei Orangen
-  '🍇': 40,  // 40x Einsatz für drei Trauben
-  '🔔': 80,  // 80x Einsatz für drei Glocken
-  '💎': 150  // 150x Einsatz für drei Diamanten
-};
+    document.getElementById('play-slots').addEventListener('click', () => {
+        const bet = parseFloat(document.getElementById('slots-bet').value);
+        if(isNaN(bet) || bet <= 0) {
+            alert("Ungültiger Einsatzbetrag");
+            return;
+        }
+        if(bet > balance) {
+            alert("Nicht genug Guthaben");
+            return;
+        }
+        balance -= bet;
+        updateHeader();
 
-// Erzeuge ein Array mit 100 "Stops" basierend auf den Wahrscheinlichkeiten
-const reelStops = [];
-slotSymbols.forEach((symbol, index) => {
-  for(let i = 0; i < slotProbabilities[index]; i++) {
-    reelStops.push(symbol);
-  }
-});
+        const reels = document.querySelectorAll('#slots-reels .reel');
+        
+        const spinInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.textContent = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            });
+        }, 100);
 
-function renderCarList() {
-  const carList = document.getElementById('car-list');
-  carList.innerHTML = '';
-  if (!Array.isArray(cars) || cars.length === 0) {
-    carList.innerHTML = '<p>Keine Autos verfügbar.</p>';
-    return;
-  }
-  cars.forEach((car, index) => {
-    const carDiv = document.createElement('div');
-    carDiv.innerHTML = `
-      <p>${car.emoji} - Preis: €${car.currentPrice.toFixed(2)} - Besitz: ${car.owned}</p>
-      <button class="shop-button" onclick="buyCar(${index})">Kaufen</button>
-      <button class="shop-button" onclick="sellCar(${index})" ${car.owned === 0 ? 'disabled' : ''}>Verkaufen</button>
-    `;
-    carList.appendChild(carDiv);
-  });
-}
-window.buyCar = (index) => {
-  const car = cars[index];
-  if (balance >= car.currentPrice) {
-    balance -= car.currentPrice;
-    car.owned += 1;
-    updateHeader();
-    renderCarList();
-  } else {
-    alert("Nicht genug Guthaben!");
-  }
-};
+        setTimeout(() => {
+            clearInterval(spinInterval);
+            const symbol1 = reelStops[Math.floor(Math.random() * 100)];
+            const symbol2 = reelStops[Math.floor(Math.random() * 100)];
+            const symbol3 = reelStops[Math.floor(Math.random() * 100)];
+            reels[0].textContent = symbol1;
+            reels[1].textContent = symbol2;
+            reels[2].textContent = symbol3;
 
-window.sellCar = (index) => {
-  const car = cars[index];
-  if (car.owned > 0) {
-    balance += car.currentPrice;
-    car.owned -= 1;
-    updateHeader();
-    renderCarList();
-  } else {
-    alert("Du besitzt kein Auto dieser Art!");
-  }
-};
-
-// Event-Listener für den Spin-Button
-document.getElementById('play-slots').addEventListener('click', () => {
-  const bet = parseFloat(document.getElementById('slots-bet').value);
-  if(isNaN(bet) || bet <= 0) {
-    alert("Ungültiger Einsatzbetrag");
-    return;
-  }
-  if(bet > balance) {
-    alert("Nicht genug Guthaben");
-    return;
-  }
-  balance -= bet;
-  updateHeader();
-
-  const reels = document.querySelectorAll('#slots-reels .reel');
-  
-  // Starte die Dreh-Animation
-  const spinInterval = setInterval(() => {
-    reels.forEach(reel => {
-      reel.textContent = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            if(symbol1 === symbol2 && symbol2 === symbol3) {
+                const multiplier = slotPayouts[symbol1];
+                const winnings = bet * multiplier;
+                balance += winnings;
+                updateHeader();
+                document.getElementById('slots-message').textContent = `Gewinn! ${multiplier}x - €${winnings.toFixed(2)}`;
+            } else {
+                document.getElementById('slots-message').textContent = 'Kein Gewinn';
+            }
+        }, 2000);
     });
-  }, 100);
 
-  // Stoppe nach 2 Sekunden und zeige das Endergebnis
-  setTimeout(() => {
-    clearInterval(spinInterval);
-    const symbol1 = reelStops[Math.floor(Math.random() * 100)];
-    const symbol2 = reelStops[Math.floor(Math.random() * 100)];
-    const symbol3 = reelStops[Math.floor(Math.random() * 100)];
-    reels[0].textContent = symbol1;
-    reels[1].textContent = symbol2;
-    reels[2].textContent = symbol3;
-
-    // Überprüfe Gewinn
-    if(symbol1 === symbol2 && symbol2 === symbol3) {
-      const multiplier = slotPayouts[symbol1];
-      const winnings = bet * multiplier;
-      balance += winnings;
-      updateHeader();
-      document.getElementById('slots-message').textContent = `Gewinn! ${multiplier}x - €${winnings.toFixed(2)}`;
-    } else {
-      document.getElementById('slots-message').textContent = 'Kein Gewinn';
-    }
-  }, 2000);
-});
-      function saveGameState() {
-      saveGameStateToServer();
+    function saveGameState() {
+        saveGameStateToServer();
     }
 
     function loadGameState() {
-    const storedPlayer = localStorage.getItem('currentPlayer');
-    if (storedPlayer) {
-        currentPlayer = JSON.parse(storedPlayer);
-        console.log('Restored currentPlayer from localStorage:', currentPlayer);
-        // Spielerdaten vom Server laden
-        fetchPlayerData(currentPlayer.username, currentPlayer.password);
-    } else {
-        // Initialisiere Variablen, falls kein Spieler angemeldet ist
-        balance = 0;
-        bankBalance = 0;
-        memecoins = {
-            PEPE: { price: 0.000005, prevPrice: 0.000005, value: 0, unlocked: false, leverage: 1 },
-            PEIPEI: { price: 0.000005, prevPrice: 0.000005, value: 0, unlocked: false, leverage: 1 },
-            GIGACHAD: { price: 0.000001, prevPrice: 0.000001, value: 0, unlocked: false, leverage: 1 },
-            GAMESTOP: { price: 0.00001, prevPrice: 0.00001, value: 0, unlocked: false, leverage: 1 }
-        };
-        hasHouse = false;
-        credits = [];
-        invoices = [];
-        lastWorkTime = 0;
-        countdownTime = 0;
-        cars = [
-            { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
-            { emoji: '🚗', basePrice: 89000, currentPrice: 89000, owned: 0 },
-            { emoji: '🚗', basePrice: 900000, currentPrice: 900000, owned: 0 }
-        ];
-    }
-}
-
-async function fetchPlayerData(username, password) {
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
-        });
-        const result = await response.json();
-        if (result.success && result.data) {
-            balance = result.data.balance || 0;
-            bankBalance = result.data.bankBalance || 0;
-            memecoins = result.data.memecoins || {
-                PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+        const storedPlayer = localStorage.getItem('currentPlayer');
+        if (storedPlayer) {
+            currentPlayer = JSON.parse(storedPlayer);
+            console.log('Restored currentPlayer from localStorage:', currentPlayer);
+            fetchPlayerData(currentPlayer.username, currentPlayer.password);
+        } else {
+            balance = 0;
+            bankBalance = 0;
+            memecoins = {
+                PEPE: { price: 0.000005, prevPrice: 0.000005, value: 0, unlocked: false, leverage: 1 },
+                PEIPEI: { price: 0.000005, prevPrice: 0.000005, value: 0, unlocked: false, leverage: 1 },
+                GIGACHAD: { price: 0.000001, prevPrice: 0.000001, value: 0, unlocked: false, leverage: 1 },
+                GAMESTOP: { price: 0.00001, prevPrice: 0.00001, value: 0, unlocked: false, leverage: 1 }
             };
-            hasHouse = result.data.hasHouse || false;
-            credits = result.data.credits || [];
-            invoices = result.data.invoices || [];
-            cars = result.data.cars || [
+            hasHouse = false;
+            credits = [];
+            invoices = [];
+            lastWorkTime = 0;
+            countdownTime = 0;
+            cars = [
                 { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
                 { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
                 { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
             ];
-            investmentValue = result.data.investmentValue || 0;
-            stocksValue = result.data.stocksValue || 0;
-            lastWorkTime = result.data.lastWorkTime || 0;
-            countdownTime = result.data.countdownTime || 60;
-            updateHeader();
-            showNotification('Spielerdaten erfolgreich geladen!');
-        } else {
-            showNotification(result.error || 'Fehler beim Laden der Spielerdaten!');
+        }
+    }
+
+    async function fetchPlayerData(username, password) {
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
+            });
+            const result = await response.json();
+            if (result.success && result.data) {
+                balance = result.data.balance || 0;
+                bankBalance = result.data.bankBalance || 0;
+                memecoins = result.data.memecoins || {
+                    PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+                    GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+                };
+                hasHouse = result.data.hasHouse || false;
+                credits = result.data.credits || [];
+                invoices = result.data.invoices || [];
+                cars = result.data.cars || [
+                    { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
+                    { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
+                    { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
+                ];
+                investmentValue = result.data.investmentValue || 0;
+                stocksValue = result.data.stocksValue || 0;
+                lastWorkTime = result.data.lastWorkTime || 0;
+                countdownTime = result.data.countdownTime || 60;
+                updateHeader();
+                showNotification('Spielerdaten erfolgreich geladen!');
+            } else {
+                showNotification(result.error || 'Fehler beim Laden der Spielerdaten!');
+                localStorage.removeItem('currentPlayer');
+                currentPlayer = null;
+            }
+        } catch (error) {
+            console.error('Error fetching player data:', error);
+            showNotification('Fehler beim Laden der Spielerdaten: ' + error.message);
             localStorage.removeItem('currentPlayer');
             currentPlayer = null;
         }
-    } catch (error) {
-        console.error('Error fetching player data:', error);
-        showNotification('Fehler beim Laden der Spielerdaten: ' + error.message);
-        localStorage.removeItem('currentPlayer');
-        currentPlayer = null;
     }
-}
 
-    loadGameState();
-
-      function updateHeader() {
+    function updateHeader() {
         balanceElem.textContent = balance.toFixed(2);
         bankDisplayElem.textContent = bankBalance.toFixed(2);
         stocksDisplayElem.textContent = stocksValue.toFixed(2);
@@ -1054,357 +1015,859 @@ async function fetchPlayerData(username, password) {
         updateInvoiceBar();
         updateCreditBar();
         saveGameState();
-      }
-      updateHeader();
+    }
 
-      function updateMultiplier() {
+    function updateMultiplier() {
         multiplierElem.textContent = multiplier.toFixed(2);
-      }
+    }
 
-      function updateInvoiceBar() {
+    function updateInvoiceBar() {
         let totalInvoices = invoices.reduce((sum, inv) => sum + inv.amount, 0);
         document.getElementById('total-invoices').textContent = totalInvoices.toFixed(2);
-      }
-      function updateCreditBar() {
+    }
+
+    function updateCreditBar() {
         let totalCredits = credits.reduce((sum, cr) => sum + cr.amount, 0);
         document.getElementById('total-credits').textContent = totalCredits.toFixed(2);
-      }
+    }
 
-      function updateHouseStatus() {
+    function updateHouseStatus() {
         const houseStatus = document.getElementById('house-status');
         if(hasHouse) {
-          houseStatus.textContent = "Du besitzt dein Haus.";
-          document.getElementById('stocks-section').style.display = 'block';
-          document.getElementById('investment-section').style.display = 'block';
-          if(Object.values(memecoins).some(c => c.unlocked)) document.getElementById('memecoin-section').style.display = 'block';
+            houseStatus.textContent = "Du besitzt dein Haus.";
+            document.getElementById('stocks-section').style.display = 'block';
+            document.getElementById('investment-section').style.display = 'block';
+            if(Object.values(memecoins).some(c => c.unlocked)) document.getElementById('memecoin-section').style.display = 'block';
         } else {
-          houseStatus.textContent = "Kein Haus! Du lebst auf der Straße. Kein Zugang zu Aktien, Fonds, Memecoins.";
-          document.getElementById('stocks-section').style.display = 'none';
-          document.getElementById('investment-section').style.display = 'none';
-          document.getElementById('memecoin-section').style.display = 'none';
+            houseStatus.textContent = "Kein Haus! Du lebst auf der Straße. Kein Zugang zu Aktien, Fonds, Memecoins.";
+            document.getElementById('stocks-section').style.display = 'none';
+            document.getElementById('investment-section').style.display = 'none';
+            document.getElementById('memecoin-section').style.display = 'none';
         }
-      }
-      updateHouseStatus();
+    }
 
-      function renderMemecoinSections() {
+    function renderMemecoinSections() {
         const container = document.getElementById('memecoin-container');
         container.innerHTML = '';
         for(let coin in memecoins) {
-          if(memecoins[coin].unlocked) {
-            let div = document.createElement('div');
-            div.style.border = "1px solid #999";
-            div.style.margin = "5px";
-            div.style.padding = "5px";
-            div.innerHTML = `
-              <h4>${coin}</h4>
-              <p>Wert: €<span id="memecoin-value-${coin}">${memecoins[coin].value.toFixed(2)}</span></p>
-              <p>Kurs: €<span id="memecoin-price-${coin}">${memecoins[coin].price.toFixed(2)}</span></p>
-              <p>Leverage: <input type="number" id="memecoin-leverage-${coin}" value="${memecoins[coin].leverage}" min="1" max="10" onchange="updateLeverage('${coin}', this.value)"></p>
-              <input type="number" id="memecoin-invest-input-${coin}" value="0" min="0" placeholder="Investitionsbetrag">
-              <button class="bank-button" onclick="investInCoin('${coin}')">Investieren</button>
-              <button class="bank-button" onclick="withdrawCoin('${coin}')">Abheben</button>
-            `;
-            container.appendChild(div);
-          }
+            if(memecoins[coin].unlocked) {
+                let div = document.createElement('div');
+                div.style.border = "1px solid #999";
+                div.style.margin = "5px";
+                div.style.padding = "5px";
+                div.innerHTML = `
+                    <h4>${coin}</h4>
+                    <p>Wert: €<span id="memecoin-value-${coin}">${memecoins[coin].value.toFixed(2)}</span></p>
+                    <p>Kurs: €<span id="memecoin-price-${coin}">${memecoins[coin].price.toFixed(2)}</span></p>
+                    <p>Leverage: <input type="number" id="memecoin-leverage-${coin}" value="${memecoins[coin].leverage}" min="1" max="10" onchange="updateLeverage('${coin}', this.value)"></p>
+                    <input type="number" id="memecoin-invest-input-${coin}" value="0" min="0" placeholder="Investitionsbetrag">
+                    <button class="bank-button" onclick="investInCoin('${coin}')">Investieren</button>
+                    <button class="bank-button" onclick="withdrawCoin('${coin}')">Abheben</button>
+                `;
+                container.appendChild(div);
+            }
         }
-      }
+    }
 
-      function updateMemecoinKurse() {
+    function updateMemecoinKurse() {
         let html = '<h3>Memecoin Kurse</h3><ul>';
         for (let coin in memecoins) {
-          if (memecoins[coin].unlocked) {
-            const arrowClass = memecoins[coin].prevPrice < memecoins[coin].price ? 'arrow-up' : 'arrow-down';
-            const arrow = memecoins[coin].prevPrice < memecoins[coin].price ? '↑' : '↓';
-            html += `<li>${coin}: €${memecoins[coin].price.toFixed(2)} <span class="${arrowClass}">${arrow}</span></li>`;
-          }
+            if (memecoins[coin].unlocked) {
+                const arrowClass = memecoins[coin].prevPrice < memecoins[coin].price ? 'arrow-up' : 'arrow-down';
+                const arrow = memecoins[coin].prevPrice < memecoins[coin].price ? '↑' : '↓';
+                html += `<li>${coin}: €${memecoins[coin].price.toFixed(2)} <span class="${arrowClass}">${arrow}</span></li>`;
+            }
         }
         html += '</ul>';
         document.getElementById('memecoin-kurse').innerHTML = html;
-      }
+    }
 
-      function updateCountdown() {
+    function updateCountdown() {
         countdownElem.textContent = `Nächster Kurswechsel in: ${countdownTime}s`;
         countdownTime--;
         if(countdownTime < 0) {
-          countdownTime = 60;
+            countdownTime = 60;
         }
-      }
-      setInterval(updateCountdown, 1000);
+    }
 
-      window.showPanel = (panelId) => {
+    function showPanel(panelId) {
         document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
         const panel = document.getElementById(panelId);
         panel.style.display = 'block';
         const emojiElem = document.getElementById('building-emoji');
         switch(panelId) {
-          case 'house-panel':
-            emojiElem.textContent = '🏠';
-            break;
-          case 'bank-panel':
-            emojiElem.textContent = '🏦';
-            break;
-          case 'casino-panel':
-            emojiElem.textContent = '🎰';
-            break;
-          case 'supermarket-panel':
-            emojiElem.textContent = '🛒';
-            break;
-          case 'shop-panel':
-            emojiElem.textContent = '🛍️';
-            renderCarList();
-            break;
-          default:
-            emojiElem.textContent = '';
+            case 'house-panel':
+                emojiElem.textContent = '🏠';
+                break;
+            case 'bank-panel':
+                emojiElem.textContent = '🏦';
+                break;
+            case 'casino-panel':
+                emojiElem.textContent = '🎰';
+                break;
+            case 'supermarket-panel':
+                emojiElem.textContent = '🛒';
+                break;
+            case 'shop-panel':
+                emojiElem.textContent = '🛍️';
+                renderCarList();
+                break;
+            default:
+                emojiElem.textContent = '';
         }
         if(panelId === 'casino-panel' && document.getElementById('casino-mines-tab').classList.contains('active')) {
-          startMinesGame();
+            startMinesGame();
         }
-      };
+    }
 
-      document.getElementById('house-icon').addEventListener('click', () => { showPanel('house-panel'); });
-      document.getElementById('bank-icon').addEventListener('click', () => { showPanel('bank-panel'); });
-      document.getElementById('casino-icon').addEventListener('click', () => { showPanel('casino-panel'); });
-      document.getElementById('shop-icon').addEventListener('click', () => { showPanel('shop-panel'); });
-      document.getElementById('supermarket-icon').addEventListener('click', () => { showPanel('supermarket-panel'); });
+    function showCasinoTab(tabId) {
+        document.getElementById('casino-mines-tab').classList.remove('active');
+        document.getElementById('casino-plinko-tab').classList.remove('active');
+        document.getElementById('casino-roulette-tab').classList.remove('active');
+        document.getElementById('casino-slots-tab').classList.remove('active');
+        document.getElementById('mines-game').style.display = 'none';
+        document.getElementById('plinko-game').style.display = 'none';
+        document.getElementById('roulette-game').style.display = 'none';
+        document.getElementById('slots-game').style.display = 'none';
+        if(tabId === 'mines-game') {
+            document.getElementById('casino-mines-tab').classList.add('active');
+            document.getElementById('mines-game').style.display = 'block';
+        } else if(tabId === 'plinko-game') {
+            document.getElementById('casino-plinko-tab').classList.add('active');
+            document.getElementById('plinko-game').style.display = 'block';
+        } else if(tabId === 'roulette-game') {
+            document.getElementById('casino-roulette-tab').classList.add('active');
+            document.getElementById('roulette-game').style.display = 'block';
+        } else if(tabId === 'slots-game') {
+            document.getElementById('casino-slots-tab').classList.add('active');
+            document.getElementById('slots-game').style.display = 'block';
+        }
+    }
 
-      document.getElementById('deposit-btn').addEventListener('click', () => {
-        let deposit = parseFloat(document.getElementById('bank-deposit').value);
-        if (isNaN(deposit) || deposit <= 0) {
-          alert('Bitte gib einen gültigen Betrag ein!');
-          return;
-        }
-        if (deposit > balance) {
-          alert('Nicht genug Guthaben!');
-          return;
-        }
-        balance -= deposit;
-        bankBalance += deposit;
-        updateHeader();
-        document.getElementById('bank-deposit').value = 0;
-      });
-      document.getElementById('withdraw-btn').addEventListener('click', () => {
-        let withdraw = parseFloat(document.getElementById('bank-withdraw').value);
-        if(withdraw > 0 && withdraw <= bankBalance) {
-          bankBalance -= withdraw;
-          balance += withdraw;
-          updateHeader();
-          document.getElementById('bank-withdraw').value = 0;
-        }
-      });
-      document.getElementById('invest-btn').addEventListener('click', () => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        let investAmt = parseFloat(document.getElementById('invest-amount').value);
-        if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          investmentValue += investAmt;
-          updateHeader();
-          document.getElementById('invest-amount').value = 0;
-        }
-      });
-      document.getElementById('withdraw-investment-btn').addEventListener('click', () => {
-        bankBalance += investmentValue;
-        investmentValue = 0;
-        updateHeader();
-        document.getElementById('investment-value').textContent = investmentValue.toFixed(2);
-      });
-      document.getElementById('stocks-invest-btn').addEventListener('click', () => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        let investAmt = parseFloat(document.getElementById('stocks-invest-amount').value);
-        if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          stocksValue += investAmt;
-          updateHeader();
-          document.getElementById('stocks-invest-amount').value = 0;
-        }
-      });
-      document.getElementById('withdraw-stocks-btn').addEventListener('click', () => {
-        bankBalance += stocksValue;
-        stocksValue = 0;
-        updateHeader();
-        document.getElementById('stocks-value').textContent = stocksValue.toFixed(2);
-      });
-
-      window.takeCredit = (amount) => {
+    window.takeCredit = (amount) => {
         let totalCredit = credits.reduce((sum, cr) => sum + cr.amount, 0);
         if(totalCredit + amount > 100000) {
-          alert("Maximales Kreditlimit von 100.000€ erreicht!");
-          return;
+            alert("Maximales Kreditlimit von 100.000€ erreicht!");
+            return;
         }
         bankBalance += amount;
         credits.push({ amount: amount });
         updateHeader();
-      };
+    };
 
-      window.payAllCredits = () => {
+    window.payAllCredits = () => {
         let totalCredits = credits.reduce((sum, cr) => sum + cr.amount, 0);
         if(bankBalance >= totalCredits) {
-          bankBalance -= totalCredits;
-          credits = [];
-          updateHeader();
-          alert("Alle Kredite wurden abbezahlt.");
+            bankBalance -= totalCredits;
+            credits = [];
+            updateHeader();
+            alert("Alle Kredite wurden abbezahlt.");
         } else {
-          alert("Nicht genug Guthaben, um alle Kredite abzubezahlen!");
+            alert("Nicht genug Guthaben, um alle Kredite abzubezahlen!");
         }
-      };
+    };
 
-      window.payAllInvoices = () => {
+    window.payAllInvoices = () => {
         let totalInvoices = invoices.reduce((sum, inv) => sum + inv.amount, 0);
         if(bankBalance >= totalInvoices) {
-          bankBalance -= totalInvoices;
-          invoices = [];
-          updateHeader();
-          alert("Alle Rechnungen wurden bezahlt.");
+            bankBalance -= totalInvoices;
+            invoices = [];
+            updateHeader();
+            alert("Alle Rechnungen wurden bezahlt.");
         } else {
-          alert("Nicht genug Guthaben, um alle Rechnungen zu begleichen!");
+            alert("Nicht genug Guthaben, um alle Rechnungen zu begleichen!");
         }
-      };
+    };
 
-      function applyCreditInterest() {
-        credits.forEach((credit) => {
-          let interest = credit.amount * 0.01;
-          credit.amount *= 1.01;
-          invoices.push({ amount: interest, timestamp: Date.now(), reminded: false });
-        });
-        updateHeader();
-      }
-      setInterval(applyCreditInterest, 300000);
-
-      window.sellHouse = () => {
+    window.sellHouse = () => {
         if(!hasHouse) { alert("Du besitzt kein Haus!"); return; }
         bankBalance += 500000;
         hasHouse = false;
         updateHouseStatus();
         updateHeader();
         alert("Haus verkauft! Du lebst nun auf der Straße und verlierst den Zugang zu Investments.");
-      };
-      window.buyHouse = () => {
+    };
+
+    window.buyHouse = () => {
         if(hasHouse) { alert("Du besitzt bereits ein Haus!"); return; }
         if(bankBalance >= 500000) {
-          bankBalance -= 500000;
-          hasHouse = true;
-          updateHouseStatus();
-          updateHeader();
-          alert("Haus zurückgekauft! Du hast wieder Zugang zu den Investments.");
+            bankBalance -= 500000;
+            hasHouse = true;
+            updateHouseStatus();
+            updateHeader();
+            alert("Haus zurückgekauft! Du hast wieder Zugang zu den Investments.");
         } else {
-          alert("Nicht genug Guthaben, um das Haus zurückzukaufen!");
+            alert("Nicht genug Guthaben, um das Haus zurückzukaufen!");
         }
-      };
+    };
 
-      window.investInCoin = (coinName) => {
+    window.investInCoin = (coinName) => {
         if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
         let input = document.getElementById(`memecoin-invest-input-${coinName}`);
         let investAmt = parseFloat(input.value);
         if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          memecoins[coinName].value += investAmt;
-          input.value = 0;
-          document.getElementById(`memecoin-value-${coinName}`).textContent = memecoins[coinName].value.toFixed(2);
-          updateHeader();
+            balance -= investAmt;
+            memecoins[coinName].value += investAmt;
+            input.value = 0;
+            document.getElementById(`memecoin-value-${coinName}`).textContent = memecoins[coinName].value.toFixed(2);
+            updateHeader();
         }
-      };
+    };
 
-      window.withdrawCoin = (coinName) => {
+    window.withdrawCoin = (coinName) => {
         if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
         if(!memecoins[coinName].unlocked) { alert("Dieser Coin ist nicht freigeschaltet!"); return; }
         let coinValue = memecoins[coinName].value;
         if(coinValue !== 0) {
-          bankBalance += coinValue;
-          memecoins[coinName].value = 0;
-          alert(`Automatische Auszahlung von ${coinName} erfolgt. Wert: €${coinValue.toFixed(2)}`);
-          updateHeader();
-          renderMemecoinSections();
+            bankBalance += coinValue;
+            memecoins[coinName].value = 0;
+            alert(`Automatische Auszahlung von ${coinName} erfolgt. Wert: €${coinValue.toFixed(2)}`);
+            updateHeader();
+            renderMemecoinSections();
         } else {
-          alert("Kein Wert zum Abheben vorhanden.");
+            alert("Kein Wert zum Abheben vorhanden.");
         }
-      };
+    };
 
-      window.updateLeverage = (coinName, newVal) => {
+    window.updateLeverage = (coinName, newVal) => {
         let val = parseFloat(newVal);
         if(val < 1) { val = 1; }
         if(val > 10) { val = 10; }
         memecoins[coinName].leverage = val;
         if(val > 1) {
-          alert("Warnung: Mit einem Leverage von " + val + " kann dein Investment bei einem 100%-Rückgang um bis zu " + (val * 100) + "% fallen.");
+            alert("Warnung: Mit einem Leverage von " + val + " kann dein Investment bei einem 100%-Rückgang um bis zu " + (val * 100) + "% fallen.");
         }
-      };
-      window.buyCoin = (coinName, cost) => {
+    };
+
+    window.buyCoin = (coinName, cost) => {
         if(memecoins[coinName].unlocked) {
-          alert(`${coinName} ist bereits freigeschaltet!`);
-          return;
+            alert(`${coinName} ist bereits freigeschaltet!`);
+            return;
         }
         if(balance >= cost) {
-          balance -= cost;
-          memecoins[coinName].unlocked = true;
-          memecoins[coinName].price = 0.5 + Math.random()*0.5;
-          memecoins[coinName].prevPrice = memecoins[coinName].price;
-          alert(`${coinName} wurde freigeschaltet! Du kannst jetzt in ${coinName} investieren.`);
-          document.getElementById('coin-status').textContent = "Freigeschaltete Coins: " +
-            Object.keys(memecoins).filter(c => memecoins[c].unlocked).join(", ");
-          document.getElementById('memecoin-section').style.display = 'block';
-          renderMemecoinSections();
-          updateHeader();
-          updateMemecoinKurse();
+            balance -= cost;
+            memecoins[coinName].unlocked = true;
+            memecoins[coinName].price = 0.5 + Math.random()*0.5;
+            memecoins[coinName].prevPrice = memecoins[coinName].price;
+            alert(`${coinName} wurde freigeschaltet! Du kannst jetzt in ${coinName} investieren.`);
+            document.getElementById('coin-status').textContent = "Freigeschaltete Coins: " +
+                Object.keys(memecoins).filter(c => memecoins[c].unlocked).join(", ");
+            document.getElementById('memecoin-section').style.display = 'block';
+            renderMemecoinSections();
+            updateHeader();
+            updateMemecoinKurse();
         } else {
-          alert("Nicht genug Guthaben!");
+            alert("Nicht genug Guthaben!");
         }
-      };
+    };
 
-      workButton.addEventListener('click', () => {
+    // Event-Listener für die Buttons
+    document.getElementById('loginButton').addEventListener('click', loginPlayer);
+    document.getElementById('registerButton').addEventListener('click', registerPlayer);
+    document.getElementById('sendButton').addEventListener('click', sendMoney);
+
+    // Event-Listener für die "Zurück zur Stadt"-Buttons
+    document.querySelectorAll('.back-button').forEach(button => {
+        button.addEventListener('click', () => {
+            showPanel('city-map');
+        });
+    });
+
+    // Event-Listener für die Casino-Tabs
+    document.getElementById('casino-mines-tab').addEventListener('click', () => showCasinoTab('mines-game'));
+    document.getElementById('casino-plinko-tab').addEventListener('click', () => showCasinoTab('plinko-game'));
+    document.getElementById('casino-roulette-tab').addEventListener('click', () => showCasinoTab('roulette-game'));
+    document.getElementById('casino-slots-tab').addEventListener('click', () => showCasinoTab('slots-game'));
+
+    document.getElementById('house-icon').addEventListener('click', () => showPanel('house-panel'));
+    document.getElementById('bank-icon').addEventListener('click', () => showPanel('bank-panel'));
+    document.getElementById('casino-icon').addEventListener('click', () => showPanel('casino-panel'));
+    document.getElementById('shop-icon').addEventListener('click', () => showPanel('shop-panel'));
+    document.getElementById('supermarket-icon').addEventListener('click', () => showPanel('supermarket-panel'));
+
+    document.getElementById('deposit-btn').addEventListener('click', () => {
+        let deposit = parseFloat(document.getElementById('bank-deposit').value);
+        if (isNaN(deposit) || deposit <= 0) {
+            alert('Bitte gib einen gültigen Betrag ein!');
+            return;
+        }
+        if (deposit > balance) {
+            alert('Nicht genug Guthaben!');
+            return;
+        }
+        balance -= deposit;
+        bankBalance += deposit;
+        updateHeader();
+        document.getElementById('bank-deposit').value = 0;
+    });
+
+    document.getElementById('withdraw-btn').addEventListener('click', () => {
+        let withdraw = parseFloat(document.getElementById('bank-withdraw').value);
+        if(withdraw > 0 && withdraw <= bankBalance) {
+            bankBalance -= withdraw;
+            balance += withdraw;
+            updateHeader();
+            document.getElementById('bank-withdraw').value = 0;
+        }
+    });
+
+    document.getElementById('invest-btn').addEventListener('click', () => {
+        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
+        let investAmt = parseFloat(document.getElementById('invest-amount').value);
+        if(investAmt > 0 && investAmt <= balance) {
+            balance -= investAmt;
+            investmentValue += investAmt;
+            updateHeader();
+            document.getElementById('invest-amount').value = 0;
+        }
+    });
+
+    document.getElementById('withdraw-investment-btn').addEventListener('click', () => {
+        bankBalance += investmentValue;
+        investmentValue = 0;
+        updateHeader();
+        document.getElementById('investment-value').textContent = investmentValue.toFixed(2);
+    });
+
+    document.getElementById('stocks-invest-btn').addEventListener('click', () => {
+        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
+        let investAmt = parseFloat(document.getElementById('stocks-invest-amount').value);
+        if(investAmt > 0 && investAmt <= balance) {
+            balance -= investAmt;
+            stocksValue += investAmt;
+            updateHeader();
+            document.getElementById('stocks-invest-amount').value = 0;
+        }
+    });
+
+    document.getElementById('withdraw-stocks-btn').addEventListener('click', () => {
+        bankBalance += stocksValue;
+        stocksValue = 0;
+        updateHeader();
+        document.getElementById('stocks-value').textContent = stocksValue.toFixed(2);
+    });
+
+    workButton.addEventListener('click', () => {
         let now = Date.now();
         if(now - lastWorkTime < 300000) {
-          document.getElementById('work-message').textContent = "Du hast heute schon gearbeitet. Bitte warte.";
-          return;
+            document.getElementById('work-message').textContent = "Du hast heute schon gearbeitet. Bitte warte.";
+            return;
         }
         let answer = prompt("Arbeitsaufgabe: Was ist 2+2?");
         if(answer !== null && answer.trim() === "4") {
-          bankBalance += 200;
-          document.getElementById('work-message').textContent = "Richtig! Du erhältst 200€ Lohn.";
-          lastWorkTime = now;
-          updateHeader();
+            bankBalance += 200;
+            document.getElementById('work-message').textContent = "Richtig! Du erhältst 200€ Lohn.";
+            lastWorkTime = now;
+            updateHeader();
         } else {
-          document.getElementById('work-message').textContent = "Falsche Antwort. Kein Lohn.";
+            document.getElementById('work-message').textContent = "Falsche Antwort. Kein Lohn.";
         }
-      });
+    });
 
-      function checkBankLetter() {
+    startGameBtn.addEventListener('click', () => {
+        gridSize = parseInt(document.getElementById('grid-size').value);
+        minesCount = parseInt(document.getElementById('mines-count').value);
+        let bet = parseFloat(document.getElementById('mines-bet').value);
+        if(bet > balance) {
+            alert("Nicht genug Guthaben für diesen Einsatz!");
+            return;
+        }
+        balance -= bet;
+        updateHeader();
+        currentMinesBet = bet;
+        startMinesGame();
+    });
+
+    takeProfitBtn.addEventListener('click', () => {
+        if(!gameOver) {
+            let profit = currentMinesBet * multiplier;
+            balance += profit;
+            updateHeader();
+            gameMessageElem.textContent = `Gewinn: €${profit.toFixed(2)}`;
+            gameOver = true;
+            document.querySelectorAll('.cell').forEach(cell => cell.style.pointerEvents = 'none');
+        }
+    });
+
+    function startMinesGame() {
+        gameOver = false;
+        multiplier = 1.00;
+        multiplierStep = 0.10 * (minesCount / 10);
+        updateMultiplier();
+        gameMessageElem.textContent = '';
+        createBoard();
+        placeMines();
+        renderBoard();
+    }
+
+    function createBoard() {
+        board = [];
+        for(let i = 0; i < gridSize; i++){
+            let row = [];
+            for(let j = 0; j < gridSize; j++){
+                row.push({ revealed: false, isMine: false, x: i, y: j });
+            }
+            board.push(row);
+        }
+    }
+
+    function placeMines() {
+        let placed = 0;
+        while(placed < minesCount){
+            let x = Math.floor(Math.random() * gridSize);
+            let y = Math.floor(Math.random() * gridSize);
+            if(!board[x][y].isMine){
+                board[x][y].isMine = true;
+                placed++;
+            }
+        }
+    }
+
+    function renderBoard() {
+        gameBoardElem.innerHTML = '';
+        gameBoardElem.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        for(let i = 0; i < gridSize; i++){
+            for(let j = 0; j < gridSize; j++){
+                const cellElem = document.createElement('div');
+                cellElem.classList.add('cell');
+                cellElem.dataset.x = i;
+                cellElem.dataset.y = j;
+                cellElem.addEventListener('click', handleCellClick);
+                gameBoardElem.appendChild(cellElem);
+            }
+        }
+        gameBoardElem.style.transform = 'rotateX(5deg)';
+    }
+
+    function handleCellClick(e) {
+        if(gameOver) return;
+        const x = parseInt(e.currentTarget.dataset.x);
+        const y = parseInt(e.currentTarget.dataset.y);
+        const cell = board[x][y];
+        if(cell.revealed) return;
+        cell.revealed = true;
+        if(cell.isMine){
+            e.currentTarget.classList.add('mine');
+            revealMines();
+            gameMessageElem.textContent = 'Boom! Mine getroffen!';
+            gameOver = true;
+            explosionEffect(e.currentTarget);
+        } else {
+            e.currentTarget.classList.add('revealed');
+            multiplier += multiplierStep;
+            updateMultiplier();
+            safeEffect(e.currentTarget);
+            if(checkWin()){
+                gameMessageElem.textContent = 'Alle sicheren Felder aufgedeckt!';
+                gameOver = true;
+                winEffect();
+            }
+        }
+    }
+
+    function revealMines() {
+        for(let i = 0; i < gridSize; i++){
+            for(let j = 0; j < gridSize; j++){
+                if(board[i][j].isMine && !board[i][j].revealed){
+                    const cellElem = document.querySelector(`.cell[data-x='${i}'][data-y='${j}']`);
+                    if(cellElem) cellElem.classList.add('mine');
+                }
+            }
+        }
+    }
+
+    function checkWin() {
+        let safe = 0;
+        for(let i = 0; i < gridSize; i++){
+            for(let j = 0; j < gridSize; j++){
+                if(!board[i][j].isMine && board[i][j].revealed) safe++;
+            }
+        }
+        return safe === (gridSize * gridSize - minesCount);
+    }
+
+    function explosionEffect(cellElem) {
+        const rect = cellElem.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        for(let i = 0; i < 30; i++){
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            const dx = (Math.random()-0.5)*150;
+            const dy = (Math.random()-0.5)*150;
+            particle.style.position = 'fixed';
+            particle.style.left = centerX + 'px';
+            particle.style.top = centerY + 'px';
+            particle.style.width = '5px';
+            particle.style.height = '5px';
+            particle.style.background = '#ff0';
+            particle.style.borderRadius = '50%';
+            particle.style.transform = `translate(${dx}px, ${dy}px)`;
+            document.body.appendChild(particle);
+            setTimeout(() => { document.body.removeChild(particle); }, 1100);
+        }
+    }
+
+    function safeEffect(cellElem) {
+        cellElem.style.background = 'linear-gradient(145deg, #6c6, #4a8)';
+        setTimeout(() => { cellElem.style.background = ''; }, 300);
+    }
+
+    function winEffect() {
+        for(let i = 0; i < 150; i++){
+            const confetti = document.createElement('div');
+            confetti.classList.add('particle');
+            confetti.style.position = 'fixed';
+            confetti.style.backgroundColor = getRandomColor();
+            confetti.style.width = '8px';
+            confetti.style.height = '8px';
+            confetti.style.borderRadius = '0';
+            confetti.style.left = Math.random() * window.innerWidth + 'px';
+            confetti.style.top = '-10px';
+            document.body.appendChild(confetti);
+            setTimeout(() => { document.body.removeChild(confetti); }, 1100);
+        }
+    }
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for(let i=0;i<6;i++){
+            color += letters[Math.floor(Math.random()*16)];
+        }
+        return color;
+    }
+
+    const plinkoMultipliers = [0.5, 1, 2, 5, 10, 5, 2, 1, 0.5];
+    const slotCategories = {
+        '0.5x': [0, 8],
+        '1x': [1, 7],
+        'higher': [2, 3, 4, 5, 6]
+    };
+    const categoryProbabilities = {
+        '0.5x': 0.6,
+        '1x': 0.3,
+        'higher': 0.1
+    };
+    const plinkoCanvas = document.getElementById('plinko-canvas');
+    const plinkoCtx = plinkoCanvas.getContext('2d');
+    const pins = [];
+    const rows = 12;
+    const pinSpacing = plinkoCanvas.width / (rows + 1);
+
+    function initPins() {
+        for (let row = 0; row < rows; row++) {
+            const numPins = row + 1;
+            const y = (row + 1) * (plinkoCanvas.height - 50) / (rows + 1);
+            for (let col = 0; col < numPins; col++) {
+                const x = (plinkoCanvas.width / (numPins + 1)) * (col + 1);
+                pins.push({ x, y });
+            }
+        }
+    }
+
+    function drawPlinkoBoard() {
+        plinkoCtx.clearRect(0, 0, plinkoCanvas.width, plinkoCanvas.height);
+        plinkoCtx.fillStyle = '#fff';
+        pins.forEach(pin => {
+            plinkoCtx.beginPath();
+            plinkoCtx.arc(pin.x, pin.y, 3, 0, Math.PI * 2);
+            plinkoCtx.fill();
+        });
+        const slotWidth = plinkoCanvas.width / plinkoMultipliers.length;
+        plinkoMultipliers.forEach((multiplier, index) => {
+            plinkoCtx.fillStyle = multiplier >= 5 ? '#ff4444' : multiplier >= 2 ? '#ffff44' : '#444';
+            plinkoCtx.fillRect(index * slotWidth, plinkoCanvas.height - 30, slotWidth, 30);
+            plinkoCtx.fillStyle = '#fff';
+            plinkoCtx.font = '14px Arial';
+            plinkoCtx.textAlign = 'center';
+            plinkoCtx.fillText(multiplier.toFixed(1) + 'x', (index + 0.5) * slotWidth, plinkoCanvas.height - 10);
+        });
+    }
+
+    function chooseCategory() {
+        const rand = Math.random();
+        if (rand < 0.6) return '0.5x';
+        if (rand < 0.9) return '1x';
+        return 'higher';
+    }
+
+    initPins();
+    drawPlinkoBoard();
+
+    document.getElementById('play-plinko').addEventListener('click', () => {
+        const bet = parseFloat(document.getElementById('plinko-bet').value);
+        if (isNaN(bet) || bet <= 0) {
+            alert("Ungültiger Einsatzbetrag");
+            return;
+        }
+        if (bet > balance) {
+            alert("Nicht genug Guthaben");
+            return;
+        }
+        balance -= bet;
+        updateHeader();
+
+        const category = chooseCategory();
+        const slots = slotCategories[category];
+        const targetSlot = slots[Math.floor(Math.random() * slots.length)];
+        const slotWidth = plinkoCanvas.width / plinkoMultipliers.length;
+        const targetX = (targetSlot + 0.5) * slotWidth;
+
+        let ballX = plinkoCanvas.width / 2;
+        let ballY = 0;
+        const ballRadius = 8;
+        let velocityX = 0;
+        let velocityY = 2;
+        const gravity = 0.2;
+
+        const dropInterval = setInterval(() => {
+            plinkoCtx.clearRect(0, 0, plinkoCanvas.width, plinkoCanvas.height);
+            drawPlinkoBoard();
+
+            plinkoCtx.beginPath();
+            plinkoCtx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            plinkoCtx.fillStyle = '#ff0';
+            plinkoCtx.fill();
+
+            ballY += velocityY;
+            velocityY += gravity;
+            const diffX = targetX - ballX;
+            velocityX += diffX * 0.015;
+            if (Math.abs(velocityX) > 5) velocityX = 5 * Math.sign(velocityX);
+            ballX += velocityX;
+
+            const rowPins = pins.filter(pin => Math.abs(pin.y - ballY) < 10);
+            rowPins.forEach(pin => {
+                const dist = Math.sqrt((ballX - pin.x) ** 2 + (ballY - pin.y) ** 2);
+                if (dist < ballRadius + 3) {
+                    velocityX += (Math.random() > 0.5 ? 1 : -1) * 2;
+                    velocityY *= 0.8;
+                }
+            });
+
+            if (ballX < ballRadius) ballX = ballRadius;
+            if (ballX > plinkoCanvas.width - ballRadius) ballX = plinkoCanvas.width - ballRadius;
+
+            if (ballY >= plinkoCanvas.height - 30 - ballRadius) {
+                clearInterval(dropInterval);
+                const slotIndex = Math.floor(ballX / slotWidth);
+                const multiplier = plinkoMultipliers[slotIndex];
+                const winnings = bet * multiplier;
+                balance += winnings;
+                updateHeader();
+                document.getElementById('plinko-message').textContent = `Die Kugel landete bei ${multiplier.toFixed(1)}x. Gewinn: €${winnings.toFixed(2)}`;
+            }
+        }, 20);
+    });
+
+    const rouletteNumbers = [
+        { number: 0, color: 'green' }, { number: 32, color: 'red' }, { number: 15, color: 'black' },
+        { number: 19, color: 'red' }, { number: 4, color: 'black' }, { number: 21, color: 'red' },
+        { number: 2, color: 'black' }, { number: 25, color: 'red' }, { number: 17, color: 'black' },
+        { number: 34, color: 'red' }, { number: 6, color: 'black' }, { number: 27, color: 'red' },
+        { number: 13, color: 'black' }, { number: 36, color: 'red' }, { number: 11, color: 'black' },
+        { number: 30, color: 'red' }, { number: 8, color: 'black' }, { number: 23, color: 'red' },
+        { number: 10, color: 'black' }, { number: 5, color: 'red' }, { number: 24, color: 'black' },
+        { number: 16, color: 'red' }, { number: 33, color: 'black' }, { number: 1, color: 'red' },
+        { number: 20, color: 'black' }, { number: 14, color: 'red' }, { number: 31, color: 'black' },
+        { number: 9, color: 'red' }, { number: 22, color: 'black' }, { number: 18, color: 'red' },
+        { number: 29, color: 'black' }, { number: 7, color: 'red' }, { number: 28, color: 'black' },
+        { number: 12, color: 'red' }, { number: 35, color: 'black' }, { number: 3, color: 'red' },
+        { number: 26, color: 'black' }
+    ];
+
+    const rouletteCanvas = document.getElementById('roulette-canvas');
+    const rouletteCtx = rouletteCanvas.getContext('2d');
+
+    function drawRouletteWheel(rotation = 0) {
+        rouletteCtx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
+        const centerX = rouletteCanvas.width / 2;
+        const centerY = rouletteCanvas.height / 2;
+        const radius = 150;
+        const angleStep = (2 * Math.PI) / rouletteNumbers.length;
+
+        rouletteCtx.save();
+        rouletteCtx.translate(centerX, centerY);
+        rouletteCtx.rotate(rotation);
+        rouletteCtx.translate(-centerX, -centerY);
+
+        rouletteNumbers.forEach((num, index) => {
+            const angle = index * angleStep;
+            rouletteCtx.beginPath();
+            rouletteCtx.moveTo(centerX, centerY);
+            rouletteCtx.arc(centerX, centerY, radius, angle, angle + angleStep);
+            rouletteCtx.fillStyle = num.color;
+            rouletteCtx.fill();
+            rouletteCtx.stroke();
+            rouletteCtx.fillStyle = '#fff';
+            rouletteCtx.font = '18px Arial';
+            rouletteCtx.textAlign = 'center';
+            const textX = centerX + (radius * 0.85) * Math.cos(angle + angleStep / 2);
+            const textY = centerY + (radius * 0.85) * Math.sin(angle + angleStep / 2);
+            rouletteCtx.fillText(num.number, textX, textY);
+        });
+        rouletteCtx.restore();
+    }
+
+    drawRouletteWheel();
+
+    document.getElementById('play-roulette').addEventListener('click', () => {
+        const bet = parseFloat(document.getElementById('roulette-bet').value);
+        const wetteType = document.getElementById('roulette-wette').value;
+        let wetteInput = document.getElementById('roulette-wette-input').value.trim().toLowerCase();
+
+        if (isNaN(bet) || bet <= 0) {
+            alert("Ungültiger Einsatzbetrag");
+            return;
+        }
+        if (bet > balance) {
+            alert("Nicht genug Guthaben");
+            return;
+        }
+        if (wetteType === 'zahl') {
+            wetteInput = parseInt(wetteInput);
+            if (isNaN(wetteInput) || wetteInput < 0 || wetteInput > 36) {
+                alert("Ungültige Zahl. Bitte wähle eine Zahl zwischen 0 und 36.");
+                return;
+            }
+        } else if (wetteType === 'farbe') {
+            if (wetteInput !== 'rot' && wetteInput !== 'schwarz') {
+                alert("Ungültige Farbe. Bitte wähle 'rot' oder 'schwarz'.");
+                return;
+            }
+            wetteInput = wetteInput === 'rot' ? 'red' : 'black';
+        }
+
+        balance -= bet;
+        updateHeader();
+
+        const resultIndex = Math.floor(Math.random() * rouletteNumbers.length);
+        const result = rouletteNumbers[resultIndex];
+        let rotation = 0;
+        const spinDuration = 3000;
+        const spinInterval = setInterval(() => {
+            rotation += 0.1;
+            drawRouletteWheel(rotation);
+        }, 20);
+
+        setTimeout(() => {
+            clearInterval(spinInterval);
+            const finalRotation = (resultIndex * (2 * Math.PI / rouletteNumbers.length)) + (Math.PI * 4);
+            drawRouletteWheel(finalRotation);
+
+            let winnings = 0;
+            if (wetteType === 'zahl' && wetteInput === result.number) {
+                winnings = bet * 36;
+            } else if (wetteType === 'farbe' && wetteInput === result.color) {
+                winnings = bet * 2;
+            }
+            balance += winnings;
+            updateHeader();
+            console.log(`Wette: ${wetteType} ${wetteInput}, Ergebnis: ${result.number} ${result.color}, Gewinn: ${winnings}`);
+            document.getElementById('roulette-message').textContent = `Das Rad landete auf ${result.number} (${result.color === 'red' ? 'rot' : result.color === 'black' ? 'schwarz' : 'grün'}). Gewinn: €${winnings.toFixed(2)}`;
+        }, spinDuration);
+    });
+
+    function createCar() {
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '0px';
+        container.style.top = '210px';
+        container.style.zIndex = '20';
+        const car = document.createElement('div');
+        car.classList.add('car');
+        car.textContent = '🚗';
+        car.style.transform = 'scaleX(-1)';
+        container.appendChild(car);
+        document.getElementById('cars-container').appendChild(container);
+
+        car.addEventListener('click', () => {
+            balance += 1;
+            updateHeader();
+            container.remove();
+        });
+
+        const animation = container.animate([
+            { transform: 'translateX(0px)' },
+            { transform: 'translateX(800px)' }
+        ], {
+            duration: 5000,
+            iterations: 1
+        });
+
+        animation.onfinish = () => {
+            container.remove();
+        };
+    }
+
+    function applyCreditInterest() {
+        credits.forEach((credit) => {
+            let interest = credit.amount * 0.01;
+            credit.amount *= 1.01;
+            invoices.push({ amount: interest, timestamp: Date.now(), reminded: false });
+        });
+        updateHeader();
+    }
+
+    function checkBankLetter() {
         const housePanel = document.getElementById('house-panel');
         let existingLetter = document.getElementById('bank-letter');
         if(bankBalance < 0) {
-          if(!existingLetter) {
-            let letter = document.createElement('div');
-            letter.id = "bank-letter";
-            letter.style.position = "absolute";
-            letter.style.top = "10px";
-            letter.style.right = "10px";
-            letter.style.padding = "10px";
-            letter.style.background = "#990000";
-            letter.style.border = "2px solid #fff";
-            letter.style.borderRadius = "5px";
-            letter.style.cursor = "pointer";
-            letter.textContent = `Bankbrief: Dein Konto ist im Minus: €${bankBalance.toFixed(2)}`;
-            letter.title = "Klicke, um den Brief zu lesen";
-            letter.addEventListener('click', () => { letter.remove(); });
-            housePanel.appendChild(letter);
-          }
+            if(!existingLetter) {
+                let letter = document.createElement('div');
+                letter.id = "bank-letter";
+                letter.style.position = "absolute";
+                letter.style.top = "10px";
+                letter.style.right = "10px";
+                letter.style.padding = "10px";
+                letter.style.background = "#990000";
+                letter.style.border = "2px solid #fff";
+                letter.style.borderRadius = "5px";
+                letter.style.cursor = "pointer";
+                letter.textContent = `Bankbrief: Dein Konto ist im Minus: €${bankBalance.toFixed(2)}`;
+                letter.title = "Klicke, um den Brief zu lesen";
+                letter.addEventListener('click', () => { letter.remove(); });
+                housePanel.appendChild(letter);
+            }
         } else {
-          if(existingLetter) { existingLetter.remove(); }
+            if(existingLetter) { existingLetter.remove(); }
         }
-      }
-      setInterval(checkBankLetter, 10000);
+    }
 
-      function checkInvoiceDue() {
+    function checkInvoiceDue() {
         let now = Date.now();
         invoices.forEach((invoice, index) => {
-          let age = now - invoice.timestamp;
-          if(age >= 50000000) {
-            alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
-            location.reload();
-          } else if(age >= 50000000 && !invoice.reminded) {
-            invoice.reminded = true;
-            alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
-          }
+            let age = now - invoice.timestamp;
+            if(age >= 50000000) {
+                alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
+                location.reload();
+            } else if(age >= 50000000 && !invoice.reminded) {
+                invoice.reminded = true;
+                alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
+            }
         });
-      }
+    }
+
+    // Initialisierungen und Intervalle
+    loadGameState();
+    updateHeader();
+    updateHouseStatus();
+    setInterval(updateCountdown, 1000);
+    setInterval(applyCreditInterest, 300000);
+    setInterval(checkBankLetter, 10000);
+    setInterval(checkInvoiceDue, 10000);
+    setInterval(createCar, 10000);
+
+    setInterval(() => {
+        if (currentPlayer) {
+            saveGameStateToServer();
+        }
+    }, 60000);
+
+    showPanel('city-map');
+    
+});
       setInterval(checkInvoiceDue, 10000);
 
       window.showCasinoTab = (tabId) => {

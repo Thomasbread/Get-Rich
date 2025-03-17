@@ -19,7 +19,8 @@ exports.handler = async function(event, context) {
         const sheets = google.sheets({ version: 'v4', auth: client });
         console.log("Google Sheets API initialized");
 
-        // Logik für Google Sheets hier...
+        // Logik für Google Sheets hier (z. B. Daten lesen oder schreiben)
+        // Fürs Debugging vorerst leer lassen oder nur eine einfache Operation
         return {
             statusCode: 200,
             headers: {

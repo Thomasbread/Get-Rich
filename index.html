@@ -594,7 +594,8 @@ async function loginPlayer() {
         console.log('Result:', result);
 
         if (result.success && result.data) {
-            currentPlayer = { username: username };
+            currentPlayer = { username: username }; // Globale Variable setzen
+            console.log('currentPlayer set:', currentPlayer);
             balance = result.data.balance || 0;
             bankBalance = result.data.bankBalance || 0;
             memecoins = result.data.memecoins || {

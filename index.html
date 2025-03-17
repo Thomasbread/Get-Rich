@@ -575,42 +575,46 @@ function showNotification(message) {
 }
 
 async function loginPlayer() {
-  console.log('Login attempt started');
-  const username = document.getElementById('username-input').value;
-  const password = document.getElementById('password-input').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    if (!username || !password) {
+        showNotification('Bitte Benutzername und Passwort eingeben!');
+        return;
+    }
 
-  if (!username || !password || username.trim() === "" || password.trim() === "") {
-    alert('Username und Passwort dürfen nicht leer sein!');
-    return;
-  }
+    console.log('Login attempt started');
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
+        });
+        console.log('Response received:', response.status, response.statusText);
+        const result = await response.json();
+        console.log('Result:', result);
 
-  const response = await fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'getPlayerData',
-      username: username,
-      password: password
-    })
-  });
-  console.log('Response received:', response);
-  const result = await response.json();
-  console.log('Result:', result);
-
-  if (result.success) {
-    currentPlayer = result.data;
-    balance = currentPlayer.balance;
-    bankBalance = currentPlayer.bankBalance;
-    memecoins = currentPlayer.memecoins;
-    updateHeader();
-    renderMemecoinSections();
-    showNotification(`Willkommen, ${username}!`);
-    // Optional: Leere die Eingabefelder nach erfolgreichem Login
-    document.getElementById('username-input').value = '';
-    document.getElementById('password-input').value = '';
-  } else {
-    alert(result.error);
-  }
+        if (result.success && result.data) {
+            currentPlayer = { username: username };
+            balance = result.data.balance;
+            bankBalance = result.data.bankBalance;
+            memecoins = result.data.memecoins;
+            hasHouse = result.data.hasHouse;
+            credits = result.data.credits;
+            invoices = result.data.invoices;
+            cars = result.data.cars;
+            investmentValue = result.data.investmentValue;
+            stocksValue = result.data.stocksValue;
+            lastWorkTime = result.data.lastWorkTime;
+            countdownTime = result.data.countdownTime;
+            updateUI();
+            showNotification('Erfolgreich angemeldet!');
+        } else {
+            showNotification(result.error || 'Anmeldung fehlgeschlagen!');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('Fehler bei der Anmeldung: ' + error.message);
+    }
 }
 
 async function registerPlayer() {

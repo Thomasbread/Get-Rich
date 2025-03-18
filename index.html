@@ -1651,18 +1651,24 @@ async function saveGameStateToServer() {
     }
 
     function checkInvoiceDue() {
-        let now = Date.now();
-        invoices.forEach((invoice, index) => {
-            let age = now - invoice.timestamp;
-            if(age >= 50000000) {
-                alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
-                location.reload();
-            } else if(age >= 50000000 && !invoice.reminded) {
-                invoice.reminded = true;
-                alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
-            }
-        });
+  if (!currentPlayer) {
+    console.log('No player logged in. Skipping invoice check.');
+    return;
+  }
+
+  const now = Date.now();
+  invoices = invoices.filter(invoice => {
+    if (invoice.dueDate && now >= invoice.dueDate && !invoice.paid) {
+      balance -= invoice.amount; // Zieht den Betrag vom Guthaben ab
+      invoice.paid = true;
+      showNotification(`Rechnung von ${invoice.amount}€ wurde fällig und bezahlt.`);
+      saveGameStateToServer(); // Speichert den aktualisierten Zustand
+      return false; // Entfernt die bezahlte Rechnung
     }
+    return true;
+  });
+  updateHeader(); // Aktualisiert die Anzeige
+}
 
     function showPanel(panelId) {
         document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');

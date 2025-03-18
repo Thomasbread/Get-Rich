@@ -13,7 +13,7 @@ exports.handler = async function(event, context) {
             throw new Error("No action specified in request body");
         }
 
-        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAVrWwLXdGBRClqe88Z-NC03FlKzTj490z6YPrsJA-dbr76C3kJSAjeFBIjgAuP-SKLg/exec"; // Ersetze dies mit deiner URL
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIbp6v4hQhfDaK4PPldbkWSlOy_Oo5G17A1t3vpVfKGVw4pd6p8WN8rc5z_3fXT8ejDQ/exec"; // Ersetze dies mit deiner URL
 
         if (action === 'registerPlayer') {
             const username = body.username;

@@ -571,16 +571,25 @@ fetchGlobalValues();
 setInterval(fetchGlobalValues, 10000);
 
 function updateGamePrices() {
-  // Aktualisiere Memecoins
   globalMemecoins.forEach(globalCoin => {
     const coinName = globalCoin.name;
     if (memecoins[coinName]) {
+      // Speichere den alten Kurs als prevPrice, bevor der neue Kurs gesetzt wird
+      if (memecoins[coinName].price !== globalCoin.currentPrice) {
+        memecoins[coinName].prevPrice = memecoins[coinName].price; // Vorheriger Kurs
+      }
       memecoins[coinName].price = globalCoin.currentPrice;
-      memecoins[coinName].prevPrice = globalCoin.prevPrice || globalCoin.currentPrice;
-      if (memecoins[coinName].unlocked) {
-        const priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100 || 0;
+
+      if (memecoins[coinName].unlocked && memecoins[coinName].value > 0) {
+        // Berechne die Kursänderung nur, wenn prevPrice definiert und sinnvoll ist
+        let priceChangePercent = 0;
+        if (memecoins[coinName].prevPrice > 0) {
+          priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100;
+        }
         const leverage = memecoins[coinName].leverage || 1;
         memecoins[coinName].value *= (1 + (priceChangePercent * leverage) / 100);
+
+        // Verhindere negative Werte und runde auf sinnvolle Weise
         if (memecoins[coinName].value < 0) {
           alert(`${coinName} ist im Minus (${priceChangePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
           bankBalance += memecoins[coinName].value;
@@ -1089,17 +1098,23 @@ document.getElementById('play-slots').addEventListener('click', () => {
       };
 
       window.investInCoin = (coinName) => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        let input = document.getElementById(`memecoin-invest-input-${coinName}`);
-        let investAmt = parseFloat(input.value);
-        if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          memecoins[coinName].value += investAmt;
-          input.value = 0;
-          document.getElementById(`memecoin-value-${coinName}`).textContent = memecoins[coinName].value.toFixed(2);
-          updateHeader();
-        }
-      };
+  if (!hasHouse) {
+    alert("Du besitzt kein Haus – Investitionen sind nicht möglich!");
+    return;
+  }
+  let input = document.getElementById(`memecoin-invest-input-${coinName}`);
+  let investAmt = parseFloat(input.value);
+  if (investAmt > 0 && investAmt <= balance) {
+    balance -= investAmt;
+    // Initialisiere den Wert proportional zum aktuellen Kurs
+    memecoins[coinName].value += investAmt;
+    // Setze prevPrice auf den aktuellen Kurs zum Zeitpunkt der Investition
+    memecoins[coinName].prevPrice = memecoins[coinName].price;
+    input.value = 0;
+    document.getElementById(`memecoin-value-${coinName}`).textContent = memecoins[coinName].value.toFixed(2);
+    updateHeader();
+  }
+};
 
       window.withdrawCoin = (coinName) => {
         if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }

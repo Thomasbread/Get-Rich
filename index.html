@@ -630,58 +630,60 @@
     }
 
     async function loginPlayer() {
-        const username = document.getElementById('username-input').value;
-        const password = document.getElementById('password-input').value;
-        if (!username || !password) {
-            showNotification('Bitte Benutzername und Passwort eingeben!');
-            return;
-        }
+  const username = document.getElementById('username-input').value;
+  const password = document.getElementById('password-input').value;
+  if (!username || !password) {
+    showNotification('Bitte Benutzername und Passwort eingeben!');
+    return;
+  }
 
-        console.log('Login attempt started');
-        try {
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
-            });
-            console.log('Response received:', response.status, response.statusText);
-            const result = await response.json();
-            console.log('Result:', result);
+  console.log('Login attempt started');
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
+    });
+    console.log('Response received:', response.status, response.statusText);
+    const result = await response.json();
+    console.log('Login result:', result);
 
-            if (result.success && result.data) {
-                currentPlayer = { username: username, password: password };
-                localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
-                console.log('currentPlayer set:', currentPlayer);
-                balance = result.data.balance || 0;
-                bankBalance = result.data.bankBalance || 0;
-                memecoins = result.data.memecoins || {
-                    PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                    PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                    GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
-                    GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
-                };
-                hasHouse = result.data.hasHouse !== undefined ? result.data.hasHouse : true;
-                credits = result.data.credits || [];
-                invoices = result.data.invoices || [];
-                cars = result.data.cars || [
-                    { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
-                    { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
-                    { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
-                ];
-                investmentValue = result.data.investmentValue || 0;
-                stocksValue = result.data.stocksValue || 0;
-                lastWorkTime = result.data.lastWorkTime || 0;
-                countdownTime = result.data.countdownTime || 60;
-                updateHeader();
-                showNotification('Erfolgreich angemeldet!');
-            } else {
-                showNotification(result.error || 'Anmeldung fehlgeschlagen!');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            showNotification('Fehler bei der Anmeldung: ' + error.message);
-        }
+    if (result.success && result.data) {
+      currentPlayer = { username: username, password: password };
+      localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
+      console.log('currentPlayer set:', currentPlayer);
+      balance = result.data.balance || 0;
+      bankBalance = result.data.bankBalance || 0;
+      memecoins = result.data.memecoins || {
+        PEPE: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+        PEIPEI: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+        GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
+        GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
+      };
+      hasHouse = result.data.hasHouse !== undefined ? Boolean(result.data.hasHouse) : true; // Explizite Typkonvertierung
+      console.log('Loaded hasHouse:', hasHouse); // Debugging
+      credits = result.data.credits || [];
+      invoices = result.data.invoices || [];
+      cars = result.data.cars || [
+        { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
+        { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
+        { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
+      ];
+      investmentValue = result.data.investmentValue || 0;
+      stocksValue = result.data.stocksValue || 0;
+      lastWorkTime = result.data.lastWorkTime || 0;
+      countdownTime = result.data.countdownTime || 60;
+      updateHeader();
+      updateHouseStatus();
+      showNotification('Erfolgreich angemeldet!');
+    } else {
+      showNotification(result.error || 'Anmeldung fehlgeschlagen!');
     }
+  } catch (error) {
+    console.error('Login error:', error);
+    showNotification('Fehler bei der Anmeldung: ' + error.message);
+  }
+}
 
     async function registerPlayer() {
         console.log('Registration attempt started');

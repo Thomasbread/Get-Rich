@@ -575,6 +575,7 @@
     // Globale Variablen für Spieler
     let currentPlayer = null;
     const WEB_APP_URL = '/.netlify/functions/api'; // Ersetze dies mit deiner Web-App-URL
+    const MARKET_DATA_URL = 'https://script.google.com/macros/s/AKfycbzIbp6v4hQhfDaK4PPldbkWSlOy_Oo5G17A1t3vpVfKGVw4pd6p8WN8rc5z_3fXT8ejDQ/exec';
 
     // Elementreferenzen
     const balanceElem = document.getElementById('balance-display');
@@ -763,6 +764,26 @@
   }
 } 
 
+async function fetchMarketData() {
+  try {
+    const response = await fetch(MARKET_DATA_URL);
+    if (!response.ok) throw new Error('Fehler beim Abruf der Marktpreise');
+    const data = await response.json();
+    globalMemecoins = data.memecoins || [];
+    globalStocksFunds = data.stocksFunds || [];
+    globalStocks = data.stocks || [];
+    globalCars = data.cars || [];
+    console.log('Marktpreise aktualisiert:', { globalMemecoins, globalStocksFunds, globalStocks, globalCars });
+    updateGamePrices(); // Aktualisiere die Preise sofort nach dem Abruf
+  } catch (error) {
+    console.error('Fehler beim Abruf der Marktpreise:', error);
+    showNotification('Fehler beim Laden der Marktpreise: ' + error.message);
+  }
+}
+
+fetchMarketData();
+setInterval(fetchMarketData, 60000);
+
 async function saveGameStateToServer() {
   if (!currentPlayer) {
     console.error('No player logged in. Cannot save game state.');
@@ -812,66 +833,65 @@ async function saveGameStateToServer() {
   }
 }
 
-    function updateGamePrices() {
-        globalMemecoins.forEach(globalCoin => {
-            const coinName = globalCoin.name;
-            if (memecoins[coinName]) {
-                memecoins[coinName].price = globalCoin.currentPrice;
-                memecoins[coinName].prevPrice = globalCoin.prevPrice || globalCoin.currentPrice;
-                if (memecoins[coinName].unlocked) {
-                    const priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100 || 0;
-                    const leverage = memecoins[coinName].leverage || 1;
-                    memecoins[coinName].value *= (1 + (priceChangePercent * leverage) / 100);
-                    if (memecoins[coinName].value < 0) {
-                        alert(`${coinName} ist im Minus (${priceChangePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
-                        bankBalance += memecoins[coinName].value;
-                        memecoins[coinName].value = 0;
-                    }
-                }
-            }
-        });
-
-        if (globalStocksFunds.length > 0) {
-            const globalFund = globalStocksFunds[0];
-            const prevPrice = isNaN(globalFund.prevPrice) || globalFund.prevPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.prevPrice;
-            const currentPrice = isNaN(globalFund.currentPrice) || globalFund.currentPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.currentPrice;
-
-            if (investmentValue > 0) {
-                const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
-                const maxChangePercent = 100;
-                const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
-                investmentValue *= (1 + (limitedPriceChangePercent / 100));
-                if (!isFinite(investmentValue) || isNaN(investmentValue)) {
-                    investmentValue = 0;
-                }
-            }
+function updateGamePrices() {
+  console.log('Updating game prices with:', { globalMemecoins, globalStocksFunds, globalStocks, globalCars });
+  globalMemecoins.forEach(globalCoin => {
+    const coinName = globalCoin.name;
+    if (memecoins[coinName]) {
+      memecoins[coinName].price = globalCoin.currentPrice;
+      memecoins[coinName].prevPrice = globalCoin.prevPrice || globalCoin.currentPrice;
+      if (memecoins[coinName].unlocked) {
+        const priceChangePercent = ((globalCoin.currentPrice - memecoins[coinName].prevPrice) / memecoins[coinName].prevPrice) * 100 || 0;
+        const leverage = memecoins[coinName].leverage || 1;
+        memecoins[coinName].value *= (1 + (priceChangePercent * leverage) / 100);
+        if (memecoins[coinName].value < 0) {
+          alert(`${coinName} ist im Minus (${priceChangePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
+          bankBalance += memecoins[coinName].value;
+          memecoins[coinName].value = 0;
         }
-
-        if (globalStocks.length > 0) {
-            const globalStock = globalStocks[0];
-            const prevPrice = isNaN(globalStock.prevPrice) || globalStock.prevPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.prevPrice;
-            const currentPrice = isNaN(globalStock.currentPrice) || globalStock.currentPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.currentPrice;
-
-            if (stocksValue > 0) {
-                const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
-                const maxChangePercent = 100;
-                const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
-                stocksValue *= (1 + (limitedPriceChangePercent / 100));
-                if (!isFinite(stocksValue) || isNaN(stocksValue)) {
-                    stocksValue = 0;
-                }
-            }
-        }
-
-        globalCars.forEach((globalCar, index) => {
-            if (cars[index]) {
-                cars[index].currentPrice = globalCar.currentPrice;
-            }
-        });
-
-        updateHeader();
-        renderMemecoinSections();
+      }
     }
+  });
+
+  if (globalStocksFunds.length > 0) {
+    const globalFund = globalStocksFunds[0];
+    const prevPrice = isNaN(globalFund.prevPrice) || globalFund.prevPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.prevPrice;
+    const currentPrice = isNaN(globalFund.currentPrice) || globalFund.currentPrice <= 0 ? (globalFund.basePrice || 100) : globalFund.currentPrice;
+    if (investmentValue > 0) {
+      const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
+      const maxChangePercent = 100;
+      const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
+      investmentValue *= (1 + (limitedPriceChangePercent / 100));
+      if (!isFinite(investmentValue) || isNaN(investmentValue)) {
+        investmentValue = 0;
+      }
+    }
+  }
+
+  if (globalStocks.length > 0) {
+    const globalStock = globalStocks[0];
+    const prevPrice = isNaN(globalStock.prevPrice) || globalStock.prevPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.prevPrice;
+    const currentPrice = isNaN(globalStock.currentPrice) || globalStock.currentPrice <= 0 ? (globalStock.basePrice || 100) : globalStock.currentPrice;
+    if (stocksValue > 0) {
+      const priceChangePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
+      const maxChangePercent = 100;
+      const limitedPriceChangePercent = Math.max(-maxChangePercent, Math.min(maxChangePercent, priceChangePercent));
+      stocksValue *= (1 + (limitedPriceChangePercent / 100));
+      if (!isFinite(stocksValue) || isNaN(stocksValue)) {
+        stocksValue = 0;
+      }
+    }
+  }
+
+  globalCars.forEach((globalCar, index) => {
+    if (cars[index]) {
+      cars[index].currentPrice = globalCar.currentPrice;
+    }
+  });
+
+  updateHeader();
+  renderMemecoinSections();
+}
 
     function renderCarList() {
         const carList = document.getElementById('car-list');

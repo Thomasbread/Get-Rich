@@ -637,21 +637,17 @@
     return;
   }
 
-  console.log('Login attempt started');
   try {
     const response = await fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'getPlayerData', username: username, password: password })
     });
-    console.log('Response received:', response.status, response.statusText);
     const result = await response.json();
-    console.log('Login result:', result);
 
     if (result.success && result.data) {
       currentPlayer = { username: username, password: password };
       localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
-      console.log('currentPlayer set:', currentPlayer);
       balance = result.data.balance || 0;
       bankBalance = result.data.bankBalance || 0;
       memecoins = result.data.memecoins || {
@@ -660,8 +656,8 @@
         GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
         GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
       };
-      hasHouse = result.data.hasHouse !== undefined ? Boolean(result.data.hasHouse) : true; // Explizite Typkonvertierung
-      console.log('Loaded hasHouse:', hasHouse); // Debugging
+      hasHouse = typeof result.data.hasHouse === 'boolean' ? result.data.hasHouse : result.data.hasHouse === 'true'; // Verbesserte Konvertierung
+      console.log('Loaded hasHouse:', hasHouse, typeof result.data.hasHouse); // Debugging
       credits = result.data.credits || [];
       invoices = result.data.invoices || [];
       cars = result.data.cars || [
@@ -718,97 +714,102 @@
     }
 
     async function sendMoney() {
-    if (!currentPlayer) {
-        alert('Bitte melde dich zuerst an!');
-        return;
+  if (!currentPlayer) {
+    alert('Bitte melde dich zuerst an!');
+    return;
+  }
+
+  const toUsername = prompt('An wen möchtest du Geld senden? (Username):');
+  const amount = parseFloat(prompt('Wie viel möchtest du senden? (€):'));
+
+  if (!toUsername || isNaN(amount) || amount <= 0) {
+    alert('Ungültige Eingabe! Bitte Username und positiven Betrag angeben.');
+    return;
+  }
+
+  if (amount > balance) {
+    alert('Nicht genug Guthaben!');
+    return;
+  }
+
+  const payload = {
+    action: 'sendMoney',
+    fromUsername: currentPlayer.username,
+    toUsername: toUsername,
+    amount: amount,
+    password: currentPlayer.password
+  };
+  console.log('Sending money payload:', payload); // Debugging
+
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      balance -= amount;
+      updateHeader();
+      showNotification(result.message);
+    } else {
+      alert(`Fehler: ${result.error}`);
     }
-
-    const toUsername = prompt('An wen möchtest du Geld senden? (Username):');
-    const amount = parseFloat(prompt('Wie viel möchtest du senden? (€):'));
-
-    if (!toUsername || isNaN(amount) || amount <= 0) {
-        alert('Ungültige Eingabe! Bitte Username und positiven Betrag angeben.');
-        return;
-    }
-
-    if (amount > balance) {
-        alert('Nicht genug Guthaben!');
-        return;
-    }
-
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'sendMoney',
-                fromUsername: currentPlayer.username,
-                toUsername: toUsername,
-                amount: amount,
-                password: currentPlayer.password
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            balance -= amount; // Balance lokal aktualisieren
-            updateHeader();
-            showNotification(result.message);
-        } else {
-            alert(`Fehler: ${result.error}`);
-        }
-    } catch (error) {
-        console.error('Fehler beim Senden:', error);
-        alert('Verbindungsfehler zum Server. Bitte später erneut versuchen.');
-    }
-}
+  } catch (error) {
+    console.error('Fehler beim Senden:', error);
+    alert('Verbindungsfehler zum Server. Bitte später erneut versuchen.');
+  }
+} 
 
 async function saveGameStateToServer() {
-    if (!currentPlayer) {
-        console.error('No player logged in. Cannot save game state.');
-        return;
+  if (!currentPlayer) {
+    console.error('No player logged in. Cannot save game state.');
+    return;
+  }
+
+  const gameState = {
+    action: 'updatePlayerData',
+    username: currentPlayer.username,
+    password: currentPlayer.password,
+    balance: balance || 0,
+    bankBalance: bankBalance || 0,
+    memecoins: memecoins || {},
+    hasHouse: hasHouse || false,
+    credits: credits || [],
+    invoices: invoices || [],
+    cars: cars || [],
+    investmentValue: investmentValue || 0,
+    stocksValue: stocksValue || 0,
+    lastWorkTime: lastWorkTime || 0,
+    countdownTime: countdownTime || 60
+  };
+
+  console.log('Saving game state:', gameState); // Debugging
+
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(gameState)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
     }
 
-    const gameState = {
-        action: 'updatePlayerData',
-        username: currentPlayer.username,
-        password: currentPlayer.password,
-        balance: balance || 0,
-        bankBalance: bankBalance || 0,
-        memecoins: memecoins || {},
-        hasHouse: hasHouse || false,
-        credits: credits || [],
-        invoices: invoices || [],
-        cars: cars || [],
-        investmentValue: investmentValue || 0,
-        stocksValue: stocksValue || 0,
-        lastWorkTime: lastWorkTime || 0,
-        countdownTime: countdownTime || 60
-    };
+    const result = await response.json();
 
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gameState)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            console.log('Game state saved successfully:', result);
-        } else {
-            console.error('Failed to save game state:', result.error);
-        }
-    } catch (error) {
-        console.error('Error saving game state:', error.message);
+    if (result.success) {
+      console.log('Game state saved successfully:', result);
+    } else {
+      console.error('Failed to save game state:', result.error);
     }
+  } catch (error) {
+    console.error('Error saving game state:', error.message);
+  }
 }
 
     function updateGamePrices() {

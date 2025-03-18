@@ -284,9 +284,13 @@
     Aktien: €<span id="stocks-display">0.00</span> | 
     Investmentfond: €<span id="investment-display">0.00</span> | 
     Memecoins: €<span id="memecoin-display">0.00</span>
-    <div id="countdown"></div>
   </header>
   <div id="memecoin-kurse"></div>
+  <div id="countdowns" style="position: absolute; top: 250px; left: 10px; width: 200px; background: #333; padding: 10px; border-radius: 5px; color: #fff;">
+    <h3>Countdowns</h3>
+    <p>Kurswechsel: <span id="countdown">60s</span></p>
+    <p>Steuer: <span id="tax-countdown">25:00</span></p>
+  </div>
   <div id="main-container">
     <div id="city-map" class="panel">
       <h2 style="text-align:center; position: relative; z-index: 3;">Stadtplan</h2>
@@ -511,6 +515,7 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
+      alert("Willkommen bei Deluxe Games & Investments! Beachte: Alles, was du nicht in Autos, Aktien, Fonds oder Memecoins anlegst, unterliegt einer Steuer. Alle 5 Tage (25 Spielminuten) erhältst du eine Steuerrechnung über 8% deines versteuerbaren Betrags (Barvermögen abzüglich investierter Werte).");
       let balance = 100.00;
       let bankBalance = 0.00;
       let investmentValue = 0.00;
@@ -815,16 +820,28 @@ document.getElementById('play-slots').addEventListener('click', () => {
 
     loadGameState();
 
+    function formatNumber(value) {
+      if (value >= 1000000000) {
+        return (value / 1000000000).toFixed(2) + "B"; // Milliarden
+      } else if (value >= 1000000) {
+        return (value / 1000000).toFixed(2) + "M"; // Millionen
+      } else if (value >= 1000) {
+        return (value / 1000).toFixed(2) + "k"; // Tausend
+      } else {
+        return value.toFixed(2); // Unter 1000, einfach mit 2 Dezimalstellen
+      }
+    }
+
       function updateHeader() {
-        balanceElem.textContent = balance.toFixed(2);
-        bankDisplayElem.textContent = bankBalance.toFixed(2);
-        stocksDisplayElem.textContent = stocksValue.toFixed(2);
-        investmentDisplayElem.textContent = investmentValue.toFixed(2);
+        balanceElem.textContent = formatNumber(balance);
+        bankDisplayElem.textContent = formatNumber(bankBalance);
+        stocksDisplayElem.textContent = formatNumber(stocksValue);
+        investmentDisplayElem.textContent = formatNumber(investmentValue);
         let totalMemecoins = 0;
         for(let coin in memecoins) { totalMemecoins += memecoins[coin].value; }
-        memecoinDisplayElem.textContent = totalMemecoins.toFixed(2);
+        memecoinDisplayElem.textContent = formatNumber(totalMemecoins);
         let totalCredit = credits.reduce((sum, cr) => sum + cr.amount, 0);
-        document.getElementById('total-credit').textContent = totalCredit.toFixed(2);
+        document.getElementById('total-credit').textContent = formatNumber(totalCredit);
         updateInvoiceBar();
         updateCreditBar();
         saveGameState();
@@ -837,11 +854,11 @@ document.getElementById('play-slots').addEventListener('click', () => {
 
       function updateInvoiceBar() {
         let totalInvoices = invoices.reduce((sum, inv) => sum + inv.amount, 0);
-        document.getElementById('total-invoices').textContent = totalInvoices.toFixed(2);
+        document.getElementById('total-invoices').textContent = formatNumber(totalInvoices);
       }
       function updateCreditBar() {
         let totalCredits = credits.reduce((sum, cr) => sum + cr.amount, 0);
-        document.getElementById('total-credits').textContent = totalCredits.toFixed(2);
+        document.getElementById('total-credits').textContent = formatNumber(totalCredits);
       }
 
       function updateHouseStatus() {
@@ -897,13 +914,27 @@ document.getElementById('play-slots').addEventListener('click', () => {
       }
 
       function updateCountdown() {
-        countdownElem.textContent = `Nächster Kurswechsel in: ${countdownTime}s`;
+        countdownElem.textContent = `${countdownTime}s`;
         countdownTime--;
-        if(countdownTime < 0) {
+        if (countdownTime < 0) {
           countdownTime = 60;
         }
       }
       setInterval(updateCountdown, 1000);
+
+      let taxCountdownTime = 1500; // 25 Minuten in Sekunden
+
+      function updateTaxCountdown() {
+        let minutes = Math.floor(taxCountdownTime / 60);
+        let seconds = taxCountdownTime % 60;
+        document.getElementById('tax-countdown').textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        taxCountdownTime--;
+        if (taxCountdownTime < 0) {
+          taxCountdownTime = 1500; // Reset auf 25 Minuten
+        }
+      }
+
+      setInterval(updateTaxCountdown, 1000);
 
       window.showPanel = (panelId) => {
         document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
@@ -1358,6 +1389,31 @@ document.getElementById('play-slots').addEventListener('click', () => {
         }
         return color;
       }
+      function calculateTaxableAmount() {
+        // Summe der investierten Werte
+        let totalMemecoins = 0;
+        for (let coin in memecoins) {
+          totalMemecoins += memecoins[coin].value;
+        }
+        let totalCarsValue = cars.reduce((sum, car) => sum + car.currentPrice * car.owned, 0);
+        let investedValue = totalCarsValue + stocksValue + investmentValue + totalMemecoins;
+
+        // Versteuerbarer Betrag: Barvermögen minus investierte Werte
+        let taxableAmount = balance + bankBalance - investedValue;
+
+        // Versteuerbarer Betrag kann nicht negativ sein
+        return taxableAmount > 0 ? taxableAmount : 0;
+      }
+      function generateTaxInvoice() {
+        let taxableAmount = calculateTaxableAmount();
+        let taxAmount = taxableAmount * 0.08; // 8% Steuer
+        if (taxAmount > 0) {
+          invoices.push({ amount: taxAmount, timestamp: Date.now(), reminded: false });
+          updateInvoiceBar();
+          alert(`Neue Steuerrechnung: €${taxAmount.toFixed(2)} (8% von €${taxableAmount.toFixed(2)} versteuerbarem Betrag). Begleiche sie rechtzeitig!`);
+        }
+      }
+      setInterval(generateTaxInvoice, 1500000);
 
       // Plinko-Spiel
       const plinkoMultipliers = [0.5, 1, 2, 5, 10, 5, 2, 1, 0.5];
@@ -1426,7 +1482,8 @@ document.getElementById('play-slots').addEventListener('click', () => {
     invoices: invoices,
     lastWorkTime: lastWorkTime,
     countdownTime: countdownTime,
-    cars: cars
+    cars: cars,
+    taxCountdownTime: taxCountdownTime
   };
   console.log('Game state saved:', gameState); // dini mueter
   localStorage.setItem('gameState', JSON.stringify(gameState));
@@ -1452,6 +1509,7 @@ function loadGameState() {
       { emoji: '🚙', basePrice: 89000, currentPrice: 89000, owned: 0 },
       { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
     ];
+    taxCountdownTime = gameState.taxCountdownTime || 1500;
     updateHeader(); // Aktualisiert die Anzeige mit den geladenen Werten
     updateHouseStatus(); // Stellt den Hausstatus wieder her
     renderMemecoinSections(); // Stellt Memecoin-Informationen wieder her

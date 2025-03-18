@@ -1143,36 +1143,6 @@ async function saveGameStateToServer() {
         }
     }
 
-    function showPanel(panelId) {
-        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-        const panel = document.getElementById(panelId);
-        panel.style.display = 'block';
-        const emojiElem = document.getElementById('building-emoji');
-        switch(panelId) {
-            case 'house-panel':
-                emojiElem.textContent = '🏠';
-                break;
-            case 'bank-panel':
-                emojiElem.textContent = '🏦';
-                break;
-            case 'casino-panel':
-                emojiElem.textContent = '🎰';
-                break;
-            case 'supermarket-panel':
-                emojiElem.textContent = '🛒';
-                break;
-            case 'shop-panel':
-                emojiElem.textContent = '🛍️';
-                renderCarList();
-                break;
-            default:
-                emojiElem.textContent = '';
-        }
-        if(panelId === 'casino-panel' && document.getElementById('casino-mines-tab').classList.contains('active')) {
-            startMinesGame();
-        }
-    }
-
     function showCasinoTab(tabId) {
         document.getElementById('casino-mines-tab').classList.remove('active');
         document.getElementById('casino-plinko-tab').classList.remove('active');
@@ -1674,6 +1644,50 @@ async function saveGameStateToServer() {
         return 'higher';
     }
 
+    function checkInvoiceDue() {
+        let now = Date.now();
+        invoices.forEach((invoice, index) => {
+            let age = now - invoice.timestamp;
+            if(age >= 50000000) {
+                alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
+                location.reload();
+            } else if(age >= 50000000 && !invoice.reminded) {
+                invoice.reminded = true;
+                alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
+            }
+        });
+    }
+
+    function showPanel(panelId) {
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        const panel = document.getElementById(panelId);
+        panel.style.display = 'block';
+        const emojiElem = document.getElementById('building-emoji');
+        switch(panelId) {
+            case 'house-panel':
+                emojiElem.textContent = '🏠';
+                break;
+            case 'bank-panel':
+                emojiElem.textContent = '🏦';
+                break;
+            case 'casino-panel':
+                emojiElem.textContent = '🎰';
+                break;
+            case 'supermarket-panel':
+                emojiElem.textContent = '🛒';
+                break;
+            case 'shop-panel':
+                emojiElem.textContent = '🛍️';
+                renderCarList();
+                break;
+            default:
+                emojiElem.textContent = '';
+        }
+        if(panelId === 'casino-panel' && document.getElementById('casino-mines-tab').classList.contains('active')) {
+            startMinesGame();
+        }
+    }
+
     initPins();
     drawPlinkoBoard();
 
@@ -1915,20 +1929,6 @@ async function saveGameStateToServer() {
         } else {
             if(existingLetter) { existingLetter.remove(); }
         }
-    }
-
-    function checkInvoiceDue() {
-        let now = Date.now();
-        invoices.forEach((invoice, index) => {
-            let age = now - invoice.timestamp;
-            if(age >= 50000000) {
-                alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
-                location.reload();
-            } else if(age >= 50000000 && !invoice.reminded) {
-                invoice.reminded = true;
-                alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
-            }
-        });
     }
 
     // Initialisierungen und Intervalle

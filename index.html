@@ -1288,6 +1288,71 @@ function updateGamePrices() {
         }
     };
 
+    setInterval(() => {
+        for(let coin in memecoins) {
+          if(memecoins[coin].unlocked) {
+            memecoins[coin].prevPrice = memecoins[coin].price;
+            let changePercent;
+            let p = (memecoins[coin].price - 0.75) / 0.25;
+            let positiveChance = 0.5 - 0.2 * p;
+            if(Math.random() < 0.8) {
+              if(Math.random() < positiveChance) {
+                if(coin === "PEPE" || coin === "PEIPEI") {
+                  changePercent = Math.random() * 10;
+                } else if(coin === "GIGACHAD") {
+                  changePercent = Math.random() * 4;
+                } else if(coin === "GAMESTOP") {
+                  changePercent = Math.random() * 6;
+                }
+              } else {
+                if(coin === "PEPE" || coin === "PEIPEI") {
+                  changePercent = -Math.random() * 5;
+                } else if(coin === "GIGACHAD") {
+                  changePercent = -Math.random() * 2;
+                } else if(coin === "GAMESTOP") {
+                  changePercent = -Math.random() * 3;
+                }
+              }
+            } else {
+              if(Math.random() < positiveChance) {
+                if(coin === "PEPE") {
+                  changePercent = 100 + Math.random() * 150;
+                } else if(coin === "PEIPEI") {
+                  changePercent = 500 + Math.random() * 1000;
+                } else if(coin === "GIGACHAD") {
+                  changePercent = 500 + Math.random() * 4000;
+                } else if(coin === "GAMESTOP") {
+                  changePercent = 80 + Math.random() * 300;
+                }
+              } else {
+                if(coin === "PEPE") {
+                  changePercent = -150 - Math.random() * 100;
+                } else if(coin === "PEIPEI") {
+                  changePercent = -1000 - Math.random() * 500;
+                } else if(coin === "GIGACHAD") {
+                  changePercent = -500 - Math.random() * 2000;
+                } else if(coin === "GAMESTOP") {
+                  changePercent = -200 - Math.random() * 180;
+                }
+              }
+            }
+            let leverage = memecoins[coin].leverage || 1;
+            let factor = 1 + (changePercent * leverage) / 100;
+            if(factor < 0.05) { factor = 0.05; }
+            memecoins[coin].price *= factor;
+            memecoins[coin].value *= (1 + (changePercent * leverage) / 100);
+            if(memecoins[coin].value < 0) {
+              alert(`${coin} ist im Minus (${changePercent.toFixed(2)}%). Automatische Auszahlung erfolgt.`);
+              bankBalance += memecoins[coin].value;
+              memecoins[coin].value = 0;
+            }
+          }
+        }
+        renderMemecoinSections();
+        updateHeader();
+        updateMemecoinKurse();
+      }, 60000);
+
     window.buyCoin = (coinName, cost) => {
         if(memecoins[coinName].unlocked) {
             alert(`${coinName} ist bereits freigeschaltet!`);

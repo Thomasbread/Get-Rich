@@ -660,7 +660,7 @@
                     GIGACHAD: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 },
                     GAMESTOP: { unlocked: false, value: 0, price: 0.5, leverage: 1, prevPrice: 0 }
                 };
-                hasHouse = result.data.hasHouse || false;
+                hasHouse = result.data.hasHouse !== undefined ? result.data.hasHouse : true;
                 credits = result.data.credits || [];
                 invoices = result.data.invoices || [];
                 cars = result.data.cars || [
@@ -1086,15 +1086,18 @@ async function saveGameStateToServer() {
 
     function updateHouseStatus() {
         const houseStatus = document.getElementById('house-status');
-        if(hasHouse) {
+        if (hasHouse) {
             houseStatus.textContent = "Du besitzt dein Haus.";
-            document.getElementById('stocks-section').style.display = 'block';
             document.getElementById('investment-section').style.display = 'block';
-            if(Object.values(memecoins).some(c => c.unlocked)) document.getElementById('memecoin-section').style.display = 'block';
         } else {
-            houseStatus.textContent = "Kein Haus! Du lebst auf der Straße. Kein Zugang zu Aktien, Fonds, Memecoins.";
-            document.getElementById('stocks-section').style.display = 'none';
+            houseStatus.textContent = "Kein Haus! Du lebst auf der Straße. Kein Zugang zum Investmentfond.";
             document.getElementById('investment-section').style.display = 'none';
+        }
+        // Memecoin- und Aktienabschnitt sind immer sichtbar
+        document.getElementById('stocks-section').style.display = 'block';
+        if (Object.values(memecoins).some(c => c.unlocked)) {
+            document.getElementById('memecoin-section').style.display = 'block';
+        } else {
             document.getElementById('memecoin-section').style.display = 'none';
         }
     }

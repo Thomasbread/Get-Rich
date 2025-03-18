@@ -531,6 +531,7 @@
       let invoices = [];
       let lastWorkTime = 0;
       let countdownTime = 60;
+      let taxCountdownTime = 1500; // 25 Minuten in Sekunden
       let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
       let currentMinesBet = 0;
 
@@ -921,8 +922,6 @@ document.getElementById('play-slots').addEventListener('click', () => {
         }
       }
       setInterval(updateCountdown, 1000);
-
-      let taxCountdownTime = 1500; // 25 Minuten in Sekunden
 
       function updateTaxCountdown() {
         let minutes = Math.floor(taxCountdownTime / 60);

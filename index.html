@@ -292,6 +292,10 @@
     <p>Steuer: <span id="tax-countdown">25:00</span></p>
   </div>
   <div id="main-container">
+    <div id="goals" style="position: absolute; top: 50px; right: 10px; width: 200px; background: #333; padding: 10px; border-radius: 5px; color: #fff;">
+      <h3>Langzeitziele</h3>
+      <ul id="goal-list"></ul>
+  </div>
     <div id="city-map" class="panel">
       <h2 style="text-align:center; position: relative; z-index: 3;">Stadtplan</h2>
       <svg width="800" height="600" style="position: relative; z-index: 1;">
@@ -531,7 +535,7 @@
       let invoices = [];
       let lastWorkTime = 0;
       let countdownTime = 60;
-      let taxCountdownTime = 1500; // 25 Minuten in Sekunden
+      let taxCountdownTime = 300; // 25 Minuten in Sekunden
       let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
       let currentMinesBet = 0;
 
@@ -546,6 +550,54 @@ let globalMemecoins = [];
 let globalStocksFunds = [];
 let globalStocks = [];
 let globalCars = [];
+
+const events = [
+    { message: "Ein Investor bietet dir 500€ an!", reward: 500 }
+    // Weitere Events können hier hinzugefügt werden
+];
+
+function triggerRandomEvent() {
+    if (Math.random() < 0.1) { // 10% Chance pro Minute
+        const event = events[Math.floor(Math.random() * events.length)];
+        alert(event.message);
+        localStorage.setItem('pendingEvent', JSON.stringify(event));
+    }
+}
+
+setInterval(triggerRandomEvent, 60000); // Alle 60 Sekunden prüfen
+
+const goals = [
+    { description: "Werde Millionär in 10 Spieltagen", target: 1000000, days: 10, achieved: false }
+    // Weitere Ziele können hier hinzugefügt werden
+];
+
+function updateGoals() {
+    const goalList = document.getElementById('goal-list');
+    goalList.innerHTML = '';
+    goals.forEach(goal => {
+        const li = document.createElement('li');
+        li.textContent = goal.description;
+        if (goal.achieved) {
+            li.style.color = 'green';
+        } else if (balance + bankBalance >= goal.target) { // Einfache Prüfung ohne Tageslogik
+            goal.achieved = true;
+            li.style.color = 'green';
+            alert(`Ziel erreicht: ${goal.description}`);
+        }
+        goalList.appendChild(li);
+    });
+}
+
+setInterval(updateGoals, 1000); // Regelmäßig aktualisieren
+
+function grantFreeCasinoRound() {
+    if (Math.random() < 0.05) { // 5% Chance pro Minute
+        alert("Du hast eine kostenlose Spielrunde im Casino erhalten!");
+        localStorage.setItem('freeCasinoRound', 'true');
+    }
+}
+
+setInterval(grantFreeCasinoRound, 60000); // Alle 60 Sekunden prüfen
 
 const fetchGlobalValues = async () => {
   try {
@@ -1031,6 +1083,18 @@ document.getElementById('play-slots').addEventListener('click', () => {
         document.getElementById('stocks-value').textContent = stocksValue.toFixed(2);
       });
 
+      document.getElementById('mailbox').addEventListener('click', () => {
+        const pendingEvent = JSON.parse(localStorage.getItem('pendingEvent'));
+        if (pendingEvent) {
+            balance += pendingEvent.reward;
+            updateHeader();
+            alert(`Du hast ${pendingEvent.reward}€ erhalten!`);
+            localStorage.removeItem('pendingEvent');
+        } else {
+            alert("Keine neuen Nachrichten.");
+        }
+    });
+
       window.takeCredit = (amount) => {
         let totalCredit = credits.reduce((sum, cr) => sum + cr.amount, 0);
         if(totalCredit + amount > 100000) {
@@ -1206,18 +1270,24 @@ document.getElementById('play-slots').addEventListener('click', () => {
       setInterval(checkBankLetter, 10000);
 
       function checkInvoiceDue() {
-        let now = Date.now();
-        invoices.forEach((invoice, index) => {
-          let age = now - invoice.timestamp;
-          if(age >= 50000000) {
-            alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
-            location.reload();
-          } else if(age >= 50000000 && !invoice.reminded) {
+    let now = Date.now();
+    invoices.forEach((invoice, index) => {
+        let age = now - invoice.timestamp;
+        if (age >= 50000000) { // 50 Millionen ms = ca. 13,89 Stunden
+            if (bankBalance < invoice.amount) {
+                const creditNeeded = invoice.amount - bankBalance;
+                takeCredit(creditNeeded);
+                alert(`Notfallkredit von ${creditNeeded.toFixed(2)}€ aufgenommen, um die Rechnung zu bezahlen.`);
+            }
+            bankBalance -= invoice.amount;
+            invoices.splice(index, 1); // Rechnung bezahlen und entfernen
+            updateHeader();
+        } else if (age >= 48000000 && !invoice.reminded) { // Erinnerung 2 Minuten vorher
             invoice.reminded = true;
-            alert("Erinnerung: Eine Rechnung muss in 1 Minute bezahlt werden!");
-          }
-        });
-      }
+            alert("Erinnerung: Eine Rechnung muss in 2 Minuten bezahlt werden!");
+        }
+    });
+}
       setInterval(checkInvoiceDue, 10000);
 
       window.showCasinoTab = (tabId) => {
@@ -1243,18 +1313,24 @@ document.getElementById('play-slots').addEventListener('click', () => {
       };
 
       startGameBtn.addEventListener('click', () => {
-        gridSize = parseInt(document.getElementById('grid-size').value);
-        minesCount = parseInt(document.getElementById('mines-count').value);
-        let bet = parseFloat(document.getElementById('mines-bet').value);
-        if(bet > balance) {
-          alert("Nicht genug Guthaben für diesen Einsatz!");
-          return;
-        }
+    gridSize = parseInt(document.getElementById('grid-size').value);
+    minesCount = parseInt(document.getElementById('mines-count').value);
+    let bet = parseFloat(document.getElementById('mines-bet').value);
+    const hasFreeRound = localStorage.getItem('freeCasinoRound') === 'true';
+    if (hasFreeRound) {
+        bet = 0; // Kostenlose Runde
+        localStorage.removeItem('freeCasinoRound');
+        alert("Kostenlose Runde wird genutzt!");
+    } else if (bet > balance) {
+        alert("Nicht genug Guthaben für diesen Einsatz!");
+        return;
+    } else {
         balance -= bet;
-        updateHeader();
-        currentMinesBet = bet;
-        startMinesGame();
-      });
+    }
+    updateHeader();
+    currentMinesBet = bet || 10; // Fallback, falls bet 0 ist
+    startMinesGame();
+});
       takeProfitBtn.addEventListener('click', () => {
         if(!gameOver) {
           let profit = currentMinesBet * multiplier;
@@ -1427,7 +1503,7 @@ document.getElementById('play-slots').addEventListener('click', () => {
           alert(`Neue Steuerrechnung: €${taxAmount.toFixed(2)} (8% von €${taxableAmount.toFixed(2)} versteuerbarem Betrag). Begleiche sie rechtzeitig!`);
         }
       }
-      setInterval(generateTaxInvoice, 1500000);
+      setInterval(generateTaxInvoice, 300000);
 
       // Plinko-Spiel
       const plinkoMultipliers = [0.5, 1, 2, 5, 10, 5, 2, 1, 0.5];
@@ -1539,6 +1615,16 @@ function loadGameState() {
 }
 
 loadGameState();
+
+let lastBonusDate = localStorage.getItem('lastBonusDate') || null;
+const today = new Date().toDateString();
+
+if (lastBonusDate !== today) {
+    balance += 50;
+    localStorage.setItem('lastBonusDate', today);
+    updateHeader();
+    alert("Du hast deinen täglichen Bonus von 50€ erhalten!");
+}
 
       initPins();
       drawPlinkoBoard();

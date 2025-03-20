@@ -263,6 +263,23 @@
     .arrow-down {
       color: red;
     }
+    .draggable {
+  transition: transform 0.2s;
+}
+
+.draggable.dragging {
+  opacity: 0.5;
+  transform: scale(1.2);
+}
+
+.dropzone {
+  transition: background 0.3s;
+}
+
+.dropzone.dragover {
+  background: #b2dfdb !important; /* Hellere Farbe beim Überfahren */
+  border: 2px solid #0288d1;
+}
     .reel {
   width: 100px;
   height: 100px;
@@ -275,6 +292,7 @@
   font-size: 64px;
 }
   </style>
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
 <body>
   <header>
@@ -489,12 +507,24 @@
     <div id="supermarket-panel" class="panel">
       <div id="building-emoji"></div>
       <h2>Supermarkt</h2>
-      <p>Hier kannst du arbeiten und 200€ verdienen.<br>
-         Löse folgende Aufgabe, um deinen Lohn zu erhalten:</p>
-      <p>Was ist 2+2?</p>
-      <input type="text" id="work-answer" placeholder="Deine Antwort">
-      <button class="bank-button" id="work-button">Arbeite</button>
-      <p id="work-message"></p>
+      <p>Arbeite hier und verdiene 30€! Ziehe 10 Lebensmittel per Drag-and-Drop in die richtigen Regale.</p>
+      <p>Fortschritt: <span id="progress-counter">0</span>/10</p>
+      <div id="work-area" style="display: flex; justify-content: space-between; align-items: center; height: 300px; margin: 20px 0;">
+        <!-- Lebensmittel zum Ziehen -->
+        <div id="food-items" style="width: 30%; text-align: center; color: #000;">
+          <h3>Lebensmittel</h3>
+          <div id="draggable-food" class="draggable" draggable="true" style="font-size: 48px; margin: 10px; cursor: move;"></div>
+        </div>
+        <!-- Regale als Drop-Zonen -->
+        <div id="shelves" style="width: 60%; display: flex; flex-direction: column; gap: 10px;">
+          <div id="shelf-milk" class="dropzone" data-category="milch" style="height: 60px; background: #e0f7fa; border: 2px dashed #0288d1; border-radius: 5px; text-align: center; line-height: 60px; color: #000;">🥛 Milchprodukte</div>
+          <div id="shelf-fruit" class="dropzone" data-category="obst" style="height: 60px; background: #f1f8e9; border: 2px dashed #7cb342; border-radius: 5px; text-align: center; line-height: 60px; color: #000;">🍎 Obst & Gemüse</div>
+          <div id="shelf-meat" class="dropzone" data-category="fleisch" style="height: 60px; background: #ffebee; border: 2px dashed #d32f2f; border-radius: 5px; text-align: center; line-height: 60px; color: #000;">🍗 Fleisch</div>
+          <div id="shelf-snacks" class="dropzone" data-category="snacks" style="height: 60px; background: #fff3e0; border: 2px dashed #f57c00; border-radius: 5px; text-align: center; line-height: 60px; color: #000;">🍟 Snacks</div>
+        </div>
+      </div>
+      <p id="work-message" style="text-align: center;"></p>
+      <button class="bank-button" id="work-button">Nächste Aufgabe</button>
       <button class="back-button" onclick="showPanel('city-map')">Zurück zur Stadt</button>
     </div>
 
@@ -519,6 +549,22 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
+  // SDK-Initialisierung
+  if (window.CrazyGames && window.CrazyGames.SDK) {
+    window.CrazyGames.SDK.game.loadingStart();
+    console.log("Loading started");
+  }
+  // Dein bestehender Code
+  alert("Willkommen bei Deluxe Games & Investments! ...");
+  // ...
+  setTimeout(() => {
+    if (window.CrazyGames && window.CrazyGames.SDK) {
+      window.CrazyGames.SDK.game.loadingStop();
+      console.log("Loading stopped");
+    }
+  }, 1000); // Simuliere Ladezeit von 1 Sekunde
+});
+    window.addEventListener('DOMContentLoaded', () => {
       alert("Willkommen bei Deluxe Games & Investments! Beachte: Alles, was du nicht in Autos, Aktien, Fonds oder Memecoins anlegst, unterliegt einer Steuer. Alle 5 Tage (25 Spielminuten) erhältst du eine Steuerrechnung über 8% deines versteuerbaren Betrags (Barvermögen abzüglich investierter Werte).");
       let balance = 100.00;
       let bankBalance = 0.00;
@@ -538,6 +584,7 @@
       let taxCountdownTime = 300; // 25 Minuten in Sekunden
       let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
       let currentMinesBet = 0;
+      let correctItems = 0;
 
       let cars = [
         { emoji: '🚗', basePrice: 56000, currentPrice: 56000, owned: 0 },
@@ -550,6 +597,19 @@ let globalMemecoins = [];
 let globalStocksFunds = [];
 let globalStocks = [];
 let globalCars = [];
+
+const supermarketTasks = [
+  { item: "🥕 Karotte", correctCategory: "obst" },
+  { item: "🥦 Brokkoli", correctCategory: "obst" },
+  { item: "🍅 Tomate", correctCategory: "obst" },
+  { item: "🥒 Gurke", correctCategory: "obst" },
+  { item: "🌽 Mais", correctCategory: "obst" },
+  { item: "🥬 Salat", correctCategory: "obst" },
+  { item: "🧀 Käse", correctCategory: "milch" },
+  { item: "🍗 Hühnchen", correctCategory: "fleisch" },
+  { item: "🍟 Chips", correctCategory: "snacks" },
+  { item: "🥛 Milch", correctCategory: "milch" }
+];
 
 const events = [
     { message: "Ein Investor bietet dir 500€ an!", reward: 500 }
@@ -565,6 +625,18 @@ function triggerRandomEvent() {
 }
 
 setInterval(triggerRandomEvent, 60000); // Alle 60 Sekunden prüfen
+
+setInterval(() => {
+  if (window.CrazyGames && window.CrazyGames.SDK) {
+    window.CrazyGames.SDK.ad.requestAd({
+      type: 'midgame',
+      callbacks: {
+        adFinished: () => console.log("Midgame ad finished"),
+        adError: () => console.log("Midgame ad error")
+      }
+    });
+  }
+}, 300000); // 5 Minuten
 
 const goals = [
     { description: "Werde Millionär in 10 Spieltagen", target: 1000000, days: 10, achieved: false }
@@ -589,6 +661,20 @@ function updateGoals() {
 }
 
 setInterval(updateGoals, 1000); // Regelmäßig aktualisieren
+
+function requestInviteLink() {
+  if (window.CrazyGames && window.CrazyGames.SDK) {
+    window.CrazyGames.SDK.user.getShareLink().then(link => {
+      alert(`Lade deine Freunde ein: ${link}`);
+      console.log("Invite link requested:", link);
+    }).catch(err => console.log("Invite link error:", err));
+  }
+}
+
+// Beispiel: Button im Shop-Panel
+document.getElementById('shop-panel').innerHTML += `
+  <button class="shop-button" onclick="requestInviteLink()">Freunde einladen</button>
+`;
 
 function grantFreeCasinoRound() {
     if (Math.random() < 0.05) { // 5% Chance pro Minute
@@ -832,6 +918,10 @@ document.getElementById('play-slots').addEventListener('click', () => {
         countdownTime: countdownTime,
         cars: cars
       };
+      if (window.CrazyGames && window.CrazyGames.SDK) {
+    window.CrazyGames.SDK.data.setItem('gameState', JSON.stringify(gameState));
+    console.log("Data saved via CrazyGames SDK");
+  }
       console.log('Saving game state:', gameState);
       localStorage.setItem('gameState', JSON.stringify(gameState));
     }
@@ -1000,6 +1090,10 @@ document.getElementById('play-slots').addEventListener('click', () => {
         document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
         const panel = document.getElementById(panelId);
         panel.style.display = 'block';
+        if (panelId === 'city-map' && window.CrazyGames && window.CrazyGames.SDK) {
+          window.CrazyGames.SDK.game.gameplayStart();
+          console.log("Gameplay started");
+        }
         const emojiElem = document.getElementById('building-emoji');
         switch(panelId) {
           case 'house-panel':
@@ -1226,22 +1320,70 @@ document.getElementById('play-slots').addEventListener('click', () => {
         }
       };
 
-      workButton.addEventListener('click', () => {
-        let now = Date.now();
-        if(now - lastWorkTime < 300000) {
-          document.getElementById('work-message').textContent = "Du hast heute schon gearbeitet. Bitte warte.";
-          return;
-        }
-        let answer = prompt("Arbeitsaufgabe: Was ist 2+2?");
-        if(answer !== null && answer.trim() === "4") {
-          bankBalance += 200;
-          document.getElementById('work-message').textContent = "Richtig! Du erhältst 200€ Lohn.";
-          lastWorkTime = now;
+      function setupDragAndDrop() {
+  const draggable = document.getElementById('draggable-food');
+  const dropzones = document.querySelectorAll('.dropzone');
+  const progressCounter = document.getElementById('progress-counter');
+
+  draggable.addEventListener('dragstart', (e) => {
+    draggable.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', draggable.dataset.category);
+  });
+
+  draggable.addEventListener('dragend', () => {
+    draggable.classList.remove('dragging');
+  });
+
+  dropzones.forEach(zone => {
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    });
+
+    zone.addEventListener('dragleave', () => {
+      zone.classList.remove('dragover');
+    });
+
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const droppedCategory = e.dataTransfer.getData('text/plain');
+      const correctCategory = zone.dataset.category;
+
+      if (droppedCategory === correctCategory) {
+        correctItems++;
+        progressCounter.textContent = correctItems;
+        document.getElementById('work-message').textContent = "Richtig eingeräumt!";
+        if (correctItems >= 10) {
+          bankBalance += 30;
+          document.getElementById('work-message').textContent = "Super! Du hast 10 Lebensmittel korrekt eingeräumt und 30€ verdient!";
+          correctItems = 0; // Zähler zurücksetzen
+          progressCounter.textContent = correctItems;
           updateHeader();
-        } else {
-          document.getElementById('work-message').textContent = "Falsche Antwort. Kein Lohn.";
         }
-      });
+      } else {
+        document.getElementById('work-message').textContent = "Falsches Regal!";
+      }
+
+      // Lebensmittel zurücksetzen
+      draggable.style.display = 'none';
+      startNewTask();
+    });
+  });
+}
+
+function startNewTask() {
+  const task = supermarketTasks[Math.floor(Math.random() * supermarketTasks.length)];
+  const draggable = document.getElementById('draggable-food');
+  draggable.textContent = task.item;
+  draggable.dataset.category = task.correctCategory;
+  draggable.style.display = 'block';
+  document.getElementById('work-message').textContent = "";
+}
+
+workButton.addEventListener('click', () => {
+  startNewTask();
+});
 
       function checkBankLetter() {
         const housePanel = document.getElementById('house-panel');
@@ -1273,11 +1415,17 @@ document.getElementById('play-slots').addEventListener('click', () => {
     let now = Date.now();
     invoices.forEach((invoice, index) => {
         let age = now - invoice.timestamp;
-        if (age >= 50000000) { // 50 Millionen ms = ca. 13,89 Stunden
+        if (age >= 50000) { // 50 Millionen ms = ca. 13,89 Stunden
             if (bankBalance < invoice.amount) {
                 const creditNeeded = invoice.amount - bankBalance;
                 takeCredit(creditNeeded);
                 alert(`Notfallkredit von ${creditNeeded.toFixed(2)}€ aufgenommen, um die Rechnung zu bezahlen.`);
+                if (window.CrazyGames && window.CrazyGames.SDK) {
+        window.CrazyGames.SDK.game.gameplayStop();
+        console.log("Gameplay stopped");
+      }
+      alert("Game Over! Du konntest die Rechnungen nicht rechtzeitig begleichen.");
+      location.reload();
             }
             bankBalance -= invoice.amount;
             invoices.splice(index, 1); // Rechnung bezahlen und entfernen
@@ -1836,7 +1984,9 @@ if (lastBonusDate !== today) {
         };
       }
       setInterval(createCar, 10000);
-
+      
+      setupDragAndDrop();
+      startNewTask();
       showPanel('city-map');
       updateHeader();
     });

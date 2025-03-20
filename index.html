@@ -7,23 +7,25 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #222;
-      color: #f1f1f1;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    }
-    header {
-      background: #333;
-      padding: 10px;
-      text-align: center;
-      font-size: 1rem;
-      flex-shrink: 0;
-      position: relative;
-    }
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #222;
+  color: #f1f1f1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  font-size: 3vmin; /* Relative Schriftgröße */
+}
+
+header {
+  background: #333;
+  padding: 2vmin;
+  text-align: center;
+  font-size: 3vmin;
+  flex-shrink: 0;
+  position: relative;
+}
     header span { font-weight: bold; }
     #total-credit { color: #ff0; }
     #countdown {
@@ -33,6 +35,13 @@
       font-size: 0.9rem;
       color: #fff;
     }
+    #expense-countdown {
+  position: absolute;
+  top: 30px; /* Unterhalb des #countdown */
+  right: 10px;
+  font-size: 0.9rem;
+  color: #ff0; /* Gelb für bessere Sichtbarkeit */
+}
     #main-container {
       display: flex;
       justify-content: center;
@@ -40,48 +49,63 @@
       position: relative;
       flex: 1;
       overflow: auto;
+      width: 100vw; /* Vollständige Breite des Bildschirms */
+      height: 100vh; /* Vollständige Höhe des Bildschirms */
+      padding: 10px; /* Etwas Platz an den Rändern */
+      box-sizing: border-box;
     }
     .panel {
-      display: none;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.95);
-      padding: 20px;
-      overflow-y: auto;
-    }
-    .back-button, .shop-button, .bank-button, .credit-button, .invoice-button, .house-button {
-      margin: 10px;
-      padding: 10px 20px;
-      background: #007acc;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.95);
+  padding: 5vmin; /* Relative Polsterung */
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.back-button, .shop-button, .bank-button, .credit-button, .invoice-button, .house-button {
+  margin: 2vmin;
+  padding: 2vmin 4vmin;
+  background: #007acc;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 3vmin; /* Größere Schrift für Touch */
+  touch-action: manipulation; /* Verhindert Zoom bei Touch */
+}
     .back-button:hover, .shop-button:hover, .bank-button:hover, .credit-button:hover, .invoice-button:hover, .house-button:hover {
       background: #005f99;
     }
     .building-icon {
-      position: absolute;
-      width: 150px;
-      height: 150px;
-      cursor: pointer;
-      transition: transform 0.3s;
-      z-index: 5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 64px;
-      text-shadow: 1px 1px 2px #000;
-    }
-    .building-icon:hover { transform: scale(1.1); }
-    #city-map {
-      position: relative;
-      width: 800px;
-      height: 600px;
-      background: none;
-      z-index: 1;
-    }
+  position: absolute;
+  width: 22vmin; /* Von 20vmin auf 22vmin erhöht */
+  height: 22vmin; /* Von 20vmin auf 22vmin erhöht */
+  cursor: pointer;
+  transition: transform 0.3s;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 9vmin; /* Von 8vmin auf 9vmin erhöht */
+  text-shadow: 1px 1px 2px #000;
+}
+    .building-icon.active {
+  transform: scale(1.1); /* Simuliert Hover-Effekt */
+}
+#city-map {
+  position: relative;
+  width: 100%; /* Relative Breite */
+  max-width: 800px; /* Maximale Breite für größere Bildschirme */
+  height: auto; /* Höhe anpassen */
+  aspect-ratio: 4 / 3; /* Verhältnis 4:3 beibehalten */
+  background: none;
+  z-index: 1;
+  transform: translateY(-5mm); /* Schiebt den Stadtplan 5 mm nach oben */
+}
     #city-map svg {
       width: 100%;
       height: 100%;
@@ -110,13 +134,45 @@
     }
     #house-panel { background: #2d2d2d; position: relative; text-align: center; }
     .house-interior {
-      width: 80%;
-      height: 400px;
-      margin: 20px auto;
-      background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400'><rect width='600' height='400' fill='#2d2d2d'/><line x1='0' y1='200' x2='600' y2='200' stroke='#fff' stroke-width='3' stroke-dasharray='10,10'/></svg>") center/cover no-repeat;
-      border: 2px solid #444;
-      border-radius: 10px;
-    }
+  width: 100%; /* Volle Breite auf kleinen Bildschirmen */
+  max-width: 600px; /* Maximale Breite für größere Bildschirme */
+  height: 50vmin; /* Relative Höhe */
+  margin: 2vmin auto;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400'><rect width='600' height='400' fill='#2d2d2d'/><line x1='0' y1='200' x2='600' y2='200' stroke='#fff' stroke-width='3' stroke-dasharray='10,10'/></svg>") center/cover no-repeat;
+  border: 2px solid #444;
+  border-radius: 10px;
+}
+
+/* Für Bildschirme kleiner als 600px */
+@media (max-width: 600px) {
+  #city-map {
+    aspect-ratio: 1 / 1; /* Quadratisches Layout auf kleinen Bildschirmen */
+  }
+
+  .building-icon {
+    width: 16.5vmin; /* Von 15vmin auf 16.5vmin erhöht */
+    height: 16.5vmin;
+    font-size: 6.5vmin; /* Von 6vmin auf 6.5vmin erhöht */
+  }
+
+  #memecoin-kurse, #countdowns {
+    width: 40vmin;
+    font-size: 2.5vmin;
+  }
+
+  .house-interior {
+    height: 40vmin;
+  }
+
+  #game-board {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .cell {
+    min-width: 0; /* Verhindert Überlauf */
+  }
+}
     #mailbox {
       position: absolute;
       bottom: 20px;
@@ -142,14 +198,14 @@
       box-shadow: 0 0 10px #00ff00;
     }
     #game-board {
-      display: grid;
-      gap: 2px;
-      margin: 10px auto;
-      width: 90%;
-      max-width: 500px;
-      transform-style: preserve-3d;
-      transition: transform 0.5s;
-    }
+  display: grid;
+  gap: 2px;
+  margin: 2vmin auto;
+  width: 90%;
+  max-width: 500px;
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+}
     .cell {
       width: 100%;
       aspect-ratio: 1;
@@ -173,12 +229,16 @@
     }
     .cell.mine { background: radial-gradient(circle, #ff0000, #8b0000); }
     #plinko-canvas, #roulette-canvas {
-      display: block;
-      margin: 10px auto;
-      background: #222;
-      border: 2px solid #555;
-      border-radius: 10px;
-    }
+  display: block;
+  margin: 2vmin auto;
+  width: 100%; /* Volle Breite auf kleinen Bildschirmen */
+  max-width: 500px;
+  height: auto;
+  aspect-ratio: 5 / 4; /* Verhältnis beibehalten */
+  background: #222;
+  border: 2px solid #555;
+  border-radius: 10px;
+}
     #slots-game {
   background: #333; /* Dunkler Hintergrund */
   border: 5px solid #444; /* Rahmen wie bei einer Maschine */
@@ -302,6 +362,8 @@
     Aktien: €<span id="stocks-display">0.00</span> | 
     Investmentfond: €<span id="investment-display">0.00</span> | 
     Memecoins: €<span id="memecoin-display">0.00</span>
+    <div id="countdown">60s</div>
+    <div id="expense-countdown">Nächste Alltagskosten: 5:00</div>
   </header>
   <div id="memecoin-kurse"></div>
   <div id="countdowns" style="position: absolute; top: 250px; left: 10px; width: 200px; background: #333; padding: 10px; border-radius: 5px; color: #fff;">
@@ -582,6 +644,7 @@
       let lastWorkTime = 0;
       let countdownTime = 60;
       let taxCountdownTime = 300; // 25 Minuten in Sekunden
+      let expenseCountdownTime = 300; // 5 Minuten in Sekunden (1 Tag im Spiel)
       let gridSize = 5, minesCount = 10, board = [], gameOver = false, multiplier = 1.00, multiplierStep;
       let currentMinesBet = 0;
       let correctItems = 0;
@@ -670,6 +733,22 @@ function requestInviteLink() {
     }).catch(err => console.log("Invite link error:", err));
   }
 }
+
+// Funktion, um Touch-Effekte zu simulieren
+function addTouchEffect(element) {
+  element.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    element.classList.add('active');
+  });
+  element.addEventListener('touchend', () => {
+    element.classList.remove('active');
+  });
+}
+
+// Wende Touch-Effekt auf alle Gebäude-Icons an
+document.querySelectorAll('.building-icon').forEach(icon => {
+  addTouchEffect(icon);
+});
 
 // Beispiel: Button im Shop-Panel
 document.getElementById('shop-panel').innerHTML += `
@@ -1086,6 +1165,39 @@ document.getElementById('play-slots').addEventListener('click', () => {
 
       setInterval(updateTaxCountdown, 1000);
 
+      function updateExpenseCountdown() {
+  let minutes = Math.floor(expenseCountdownTime / 60);
+  let seconds = expenseCountdownTime % 60;
+  document.getElementById('expense-countdown').textContent = `Nächste Alltagskosten: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  expenseCountdownTime--;
+  if (expenseCountdownTime < 0) {
+    expenseCountdownTime = 300; // Reset auf 5 Minuten
+    applyDailyExpenses();
+  }
+}
+
+setInterval(updateExpenseCountdown, 1000);
+
+function applyDailyExpenses() {
+  const dailyExpense = 30; // 30 € pro Tag
+  if (balance >= dailyExpense) {
+    balance -= dailyExpense;
+    updateHeader();
+    alert(`Alltagskosten von ${dailyExpense}€ wurden abgezogen.`);
+  } else if (bankBalance >= dailyExpense) {
+    bankBalance -= dailyExpense;
+    updateHeader();
+    alert(`Alltagskosten von ${dailyExpense}€ wurden von deinem Bankkonto abgezogen.`);
+  } else {
+    const creditNeeded = dailyExpense - (balance + bankBalance);
+    takeCredit(creditNeeded);
+    balance = 0;
+    bankBalance = 0;
+    updateHeader();
+    alert(`Nicht genug Guthaben für die Alltagskosten von ${dailyExpense}€. Ein Notfallkredit von ${creditNeeded.toFixed(2)}€ wurde aufgenommen.`);
+  }
+}
+
       window.showPanel = (panelId) => {
         document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
         const panel = document.getElementById(panelId);
@@ -1188,6 +1300,27 @@ document.getElementById('play-slots').addEventListener('click', () => {
             alert("Keine neuen Nachrichten.");
         }
     });
+
+    document.getElementById('house-icon').addEventListener('touchstart', (e) => {
+  e.preventDefault(); // Verhindert Scrollen
+  showPanel('house-panel');
+});
+document.getElementById('bank-icon').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  showPanel('bank-panel');
+});
+document.getElementById('casino-icon').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  showPanel('casino-panel');
+});
+document.getElementById('shop-icon').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  showPanel('shop-panel');
+});
+document.getElementById('supermarket-icon').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  showPanel('supermarket-panel');
+});
 
       window.takeCredit = (amount) => {
         let totalCredit = credits.reduce((sum, cr) => sum + cr.amount, 0);
@@ -1521,45 +1654,51 @@ workButton.addEventListener('click', () => {
         }
       }
       function renderBoard() {
-        gameBoardElem.innerHTML = '';
-        gameBoardElem.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-        for(let i = 0; i < gridSize; i++){
-          for(let j = 0; j < gridSize; j++){
-            const cellElem = document.createElement('div');
-            cellElem.classList.add('cell');
-            cellElem.dataset.x = i;
-            cellElem.dataset.y = j;
-            cellElem.addEventListener('click', handleCellClick);
-            gameBoardElem.appendChild(cellElem);
-          }
-        }
-        gameBoardElem.style.transform = 'rotateX(5deg)';
-      }
-      function handleCellClick(e) {
-        if(gameOver) return;
-        const x = parseInt(e.currentTarget.dataset.x);
-        const y = parseInt(e.currentTarget.dataset.y);
-        const cell = board[x][y];
-        if(cell.revealed) return;
-        cell.revealed = true;
-        if(cell.isMine){
-          e.currentTarget.classList.add('mine');
-          revealMines();
-          gameMessageElem.textContent = 'Boom! Mine getroffen!';
-          gameOver = true;
-          explosionEffect(e.currentTarget);
-        } else {
-          e.currentTarget.classList.add('revealed');
-          multiplier += multiplierStep;
-          updateMultiplier();
-          safeEffect(e.currentTarget);
-          if(checkWin()){
-            gameMessageElem.textContent = 'Alle sicheren Felder aufgedeckt!';
-            gameOver = true;
-            winEffect();
-          }
-        }
-      }
+  gameBoardElem.innerHTML = '';
+  gameBoardElem.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const cellElem = document.createElement('div');
+      cellElem.classList.add('cell');
+      cellElem.dataset.x = i;
+      cellElem.dataset.y = j;
+      // Click-Event für Desktop
+      cellElem.addEventListener('click', handleCellClick);
+      // Touch-Event für Mobile
+      cellElem.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleCellClick(e);
+      });
+      gameBoardElem.appendChild(cellElem);
+    }
+  }
+  gameBoardElem.style.transform = 'rotateX(5deg)';
+}
+function handleCellClick(e) {
+  if (gameOver) return;
+  const x = parseInt(e.currentTarget.dataset.x);
+  const y = parseInt(e.currentTarget.dataset.y);
+  const cell = board[x][y];
+  if (cell.revealed) return;
+  cell.revealed = true;
+  if (cell.isMine) {
+    e.currentTarget.classList.add('mine');
+    revealMines();
+    gameMessageElem.textContent = 'Boom! Mine getroffen!';
+    gameOver = true;
+    explosionEffect(e.currentTarget);
+  } else {
+    e.currentTarget.classList.add('revealed');
+    multiplier += multiplierStep;
+    updateMultiplier();
+    safeEffect(e.currentTarget);
+    if (checkWin()) {
+      gameMessageElem.textContent = 'Alle sicheren Felder aufgedeckt!';
+      gameOver = true;
+      winEffect();
+    }
+  }
+}  
       function revealMines() {
         for(let i = 0; i < gridSize; i++){
           for(let j = 0; j < gridSize; j++){
@@ -1721,7 +1860,8 @@ workButton.addEventListener('click', () => {
     lastWorkTime: lastWorkTime,
     countdownTime: countdownTime,
     cars: cars,
-    taxCountdownTime: taxCountdownTime
+    taxCountdownTime: taxCountdownTime,
+    expenseCountdownTime: expenseCountdownTime
   };
   console.log('Game state saved:', gameState); // dini mueter
   localStorage.setItem('gameState', JSON.stringify(gameState));
@@ -1748,6 +1888,7 @@ function loadGameState() {
       { emoji: '🏎️', basePrice: 900000, currentPrice: 900000, owned: 0 }
     ];
     taxCountdownTime = gameState.taxCountdownTime || 1500;
+    expenseCountdownTime = gameState.expenseCountdownTime || 300;
     updateHeader(); // Aktualisiert die Anzeige mit den geladenen Werten
     updateHouseStatus(); // Stellt den Hausstatus wieder her
     renderMemecoinSections(); // Stellt Memecoin-Informationen wieder her
@@ -1953,37 +2094,62 @@ if (lastBonusDate !== today) {
       });
 
       function createCar() {
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '0px';
-        container.style.top = '210px';
-        container.style.zIndex = '20';
-        const car = document.createElement('div');
-        car.classList.add('car');
-        car.textContent = '🚗';
-        car.style.transform = 'scaleX(-1)';
-        container.appendChild(car);
-        document.getElementById('cars-container').appendChild(container);
+  // Nur auf Geräten mit ausreichender Breite animieren
+  if (window.innerWidth > 600) {
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '0px';
+    container.style.top = '210px';
+    container.style.zIndex = '20';
+    const car = document.createElement('div');
+    car.classList.add('car');
+    car.textContent = '🚗';
+    car.style.transform = 'scaleX(-1)';
+    container.appendChild(car);
+    document.getElementById('cars-container').appendChild(container);
 
-        car.addEventListener('click', () => {
-          balance += 1;
-          updateHeader();
-          container.remove();
-        });
+    car.addEventListener('click', () => {
+      balance += 1;
+      updateHeader();
+      container.remove();
+    });
+    car.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      balance += 1;
+      updateHeader();
+      container.remove();
+    });
 
-        const animation = container.animate([
-          { transform: 'translateX(0px)' },
-          { transform: 'translateX(800px)' }
-        ], {
-          duration: 5000,
-          iterations: 1
-        });
+    const animation = container.animate([
+      { transform: 'translateX(0px)' },
+      { transform: 'translateX(800px)' }
+    ], {
+      duration: 5000,
+      iterations: 1
+    });
 
-        animation.onfinish = () => {
-          container.remove();
-        };
-      }
-      setInterval(createCar, 10000);
+    animation.onfinish = () => {
+      container.remove();
+    };
+  }
+}
+setInterval(createCar, 10000);
+
+function resizeCanvas() {
+  const plinkoCanvas = document.getElementById('plinko-canvas');
+  const rouletteCanvas = document.getElementById('roulette-canvas');
+  const width = Math.min(window.innerWidth - 20, 500); // Maximal 500px
+  const height = (width * 4) / 5; // Seitenverhältnis 5:4
+
+  plinkoCanvas.width = width;
+  plinkoCanvas.height = height;
+  rouletteCanvas.width = width;
+  rouletteCanvas.height = height;
+}
+
+// Beim Laden und bei Größenänderung anpassen
+window.addEventListener('DOMContentLoaded', resizeCanvas);
+window.addEventListener('resize', resizeCanvas);
       
       setupDragAndDrop();
       startNewTask();

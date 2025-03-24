@@ -468,7 +468,7 @@ header {
         <div style="width: 48%;">
           <div class="bank-section" id="investment-section">
             <h3>Investmentfond</h3>
-            <label for="invest-amount">Investmentfond (€):</label>
+            <label for="invest-amount">Betrag (€):</label>
             <input type="number" id="invest-amount" value="0" min="0">
             <button id="invest-btn" class="bank-button">Investieren</button>
             <button id="withdraw-investment-btn" class="bank-button">Auszahlen</button>
@@ -476,7 +476,7 @@ header {
           </div>
           <div class="bank-section" id="stocks-section">
             <h3>Aktien</h3>
-            <label for="stocks-invest-amount">Aktien (€):</label>
+            <label for="stocks-invest-amount">Betrag (€):</label>
             <input type="number" id="stocks-invest-amount" value="0" min="0">
             <button id="stocks-invest-btn" class="bank-button">Investieren</button>
             <button id="withdraw-stocks-btn" class="bank-button">Auszahlen</button>
@@ -1109,27 +1109,28 @@ document.getElementById('play-slots').addEventListener('click', () => {
       updateHouseStatus();
 
       function renderMemecoinSections() {
-        const container = document.getElementById('memecoin-container');
-        container.innerHTML = '';
-        for(let coin in memecoins) {
-          if(memecoins[coin].unlocked) {
-            let div = document.createElement('div');
-            div.style.border = "1px solid #999";
-            div.style.margin = "5px";
-            div.style.padding = "5px";
-            div.innerHTML = `
-              <h4>${coin}</h4>
-              <p>Wert: €<span id="memecoin-value-${coin}">${memecoins[coin].value.toFixed(2)}</span></p>
-              <p>Kurs: €<span id="memecoin-price-${coin}">${memecoins[coin].price.toFixed(2)}</span></p>
-              <p>Leverage: <input type="number" id="memecoin-leverage-${coin}" value="${memecoins[coin].leverage}" min="1" max="10" onchange="updateLeverage('${coin}', this.value)"></p>
-              <input type="number" id="memecoin-invest-input-${coin}" value="0" min="0" placeholder="Investitionsbetrag">
-              <button class="bank-button" onclick="investInCoin('${coin}')">Investieren</button>
-              <button class="bank-button" onclick="withdrawCoin('${coin}')">Abheben</button>
-            `;
-            container.appendChild(div);
-          }
-        }
-      }
+  const container = document.getElementById('memecoin-container');
+  container.innerHTML = '';
+  for (let coin in memecoins) {
+    if (memecoins[coin].unlocked) {
+      let div = document.createElement('div');
+      div.style.border = "1px solid #999";
+      div.style.margin = "5px";
+      div.style.padding = "5px";
+      div.innerHTML = `
+        <h4>${coin}</h4>
+        <p>Wert: €<span id="memecoin-value-${coin}">${memecoins[coin].value.toFixed(2)}</span></p>
+        <p>Kurs: €<span id="memecoin-price-${coin}">${memecoins[coin].price.toFixed(2)}</span></p>
+        <p>Leverage: <input type="number" id="memecoin-leverage-${coin}" value="${memecoins[coin].leverage}" min="1" max="10" onchange="updateLeverage('${coin}', this.value)"></p>
+        <label for="memecoin-invest-input-${coin}">Betrag (€):</label>
+        <input type="number" id="memecoin-invest-input-${coin}" value="0" min="0" placeholder="Betrag">
+        <button class="bank-button" onclick="investInCoin('${coin}')">Investieren</button>
+        <button class="bank-button" onclick="withdrawCoin('${coin}')">Auszahlen</button>
+      `;
+      container.appendChild(div);
+    }
+  }
+}
 
       function updateMemecoinKurse() {
         let html = '<h3>Memecoin Kurse</h3><ul>';
@@ -1257,37 +1258,53 @@ function applyDailyExpenses() {
         }
       });
       document.getElementById('invest-btn').addEventListener('click', () => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        let investAmt = parseFloat(document.getElementById('invest-amount').value);
-        if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          investmentValue += investAmt;
-          updateHeader();
-          document.getElementById('invest-amount').value = 0;
-        }
-      });
-      document.getElementById('withdraw-investment-btn').addEventListener('click', () => {
-        bankBalance += investmentValue;
-        investmentValue = 0;
-        updateHeader();
-        document.getElementById('investment-value').textContent = investmentValue.toFixed(2);
-      });
-      document.getElementById('stocks-invest-btn').addEventListener('click', () => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        let investAmt = parseFloat(document.getElementById('stocks-invest-amount').value);
-        if(investAmt > 0 && investAmt <= balance) {
-          balance -= investAmt;
-          stocksValue += investAmt;
-          updateHeader();
-          document.getElementById('stocks-invest-amount').value = 0;
-        }
-      });
-      document.getElementById('withdraw-stocks-btn').addEventListener('click', () => {
-        bankBalance += stocksValue;
-        stocksValue = 0;
-        updateHeader();
-        document.getElementById('stocks-value').textContent = stocksValue.toFixed(2);
-      });
+  if (!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
+  let investAmt = parseFloat(document.getElementById('invest-amount').value);
+  if (investAmt > 0 && investAmt <= balance) {
+    balance -= investAmt;
+    investmentValue += investAmt;
+    updateHeader();
+    document.getElementById('invest-amount').value = 0;
+  } else {
+    alert("Ungültiger Betrag oder nicht genug Guthaben!");
+  }
+});
+document.getElementById('withdraw-investment-btn').addEventListener('click', () => {
+  let withdrawAmt = parseFloat(document.getElementById('invest-amount').value);
+  if (withdrawAmt > 0 && withdrawAmt <= investmentValue) {
+    bankBalance += withdrawAmt;
+    investmentValue -= withdrawAmt;
+    updateHeader();
+    document.getElementById('investment-value').textContent = formatNumber(investmentValue);
+    document.getElementById('invest-amount').value = 0;
+  } else {
+    alert("Ungültiger Betrag oder nicht genug im Investmentfond!");
+  }
+});
+document.getElementById('stocks-invest-btn').addEventListener('click', () => {
+  if (!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
+  let investAmt = parseFloat(document.getElementById('stocks-invest-amount').value);
+  if (investAmt > 0 && investAmt <= balance) {
+    balance -= investAmt;
+    stocksValue += investAmt;
+    updateHeader();
+    document.getElementById('stocks-invest-amount').value = 0;
+  } else {
+    alert("Ungültiger Betrag oder nicht genug Guthaben!");
+  }
+});
+document.getElementById('withdraw-stocks-btn').addEventListener('click', () => {
+  let withdrawAmt = parseFloat(document.getElementById('stocks-invest-amount').value);
+  if (withdrawAmt > 0 && withdrawAmt <= stocksValue) {
+    bankBalance += withdrawAmt;
+    stocksValue -= withdrawAmt;
+    updateHeader();
+    document.getElementById('stocks-value').textContent = formatNumber(stocksValue);
+    document.getElementById('stocks-invest-amount').value = 0;
+  } else {
+    alert("Ungültiger Betrag oder nicht genug Aktienwert!");
+  }
+});
 
       document.getElementById('mailbox').addEventListener('click', () => {
         const pendingEvent = JSON.parse(localStorage.getItem('pendingEvent'));
@@ -1407,20 +1424,20 @@ document.getElementById('supermarket-icon').addEventListener('touchstart', (e) =
   }
 };
 
-      window.withdrawCoin = (coinName) => {
-        if(!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
-        if(!memecoins[coinName].unlocked) { alert("Dieser Coin ist nicht freigeschaltet!"); return; }
-        let coinValue = memecoins[coinName].value;
-        if(coinValue !== 0) {
-          bankBalance += coinValue;
-          memecoins[coinName].value = 0;
-          alert(`Automatische Auszahlung von ${coinName} erfolgt. Wert: €${coinValue.toFixed(2)}`);
-          updateHeader();
-          renderMemecoinSections();
-        } else {
-          alert("Kein Wert zum Abheben vorhanden.");
-        }
-      };
+window.withdrawCoin = (coinName) => {
+  if (!hasHouse) { alert("Du besitzt kein Haus – Investitionen sind nicht möglich!"); return; }
+  if (!memecoins[coinName].unlocked) { alert("Dieser Coin ist nicht freigeschaltet!"); return; }
+  let withdrawAmt = parseFloat(document.getElementById(`memecoin-invest-input-${coinName}`).value);
+  if (withdrawAmt > 0 && withdrawAmt <= memecoins[coinName].value) {
+    bankBalance += withdrawAmt;
+    memecoins[coinName].value -= withdrawAmt;
+    document.getElementById(`memecoin-value-${coinName}`).textContent = memecoins[coinName].value.toFixed(2);
+    document.getElementById(`memecoin-invest-input-${coinName}`).value = 0;
+    updateHeader();
+  } else {
+    alert("Ungültiger Betrag oder nicht genug Wert im Coin!");
+  }
+};
 
       window.updateLeverage = (coinName, newVal) => {
         let val = parseFloat(newVal);
